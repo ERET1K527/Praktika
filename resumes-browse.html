@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>JobFlow — База резюме</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="css\resumes-browse.css">
+</head>
+<body>
+
+<div class="top-nav">
+    <div class="nav-container">
+        <div class="nav-links">
+            <a href="index.html"><i class="fas fa-briefcase"></i> Ищу работу</a>
+            <a href="sotrudnick.html"><i class="fas fa-users"></i> Ищу сотрудника</a>
+            <a href="servise.html"><i class="fas fa-concierge-bell"></i> Сервисы</a>
+            <a href="help.html"><i class="fas fa-question-circle"></i> Помощь</a>
+        </div>
+        <div class="nav-right">
+            <a href="city.html"><i class="fas fa-map-marker-alt"></i> Брянск</a>
+            <a href="login.html"><i class="fas fa-sign-in-alt"></i> Войти</a>
+            <a href="rezume.html" class="btn-resume"><i class="fas fa-file-alt"></i> Создать резюме</a>
+        </div>
+    </div>
+</div>
+
+<div class="main-wrapper">
+    <div class="search-bar">
+        <div class="search-inputs">
+            <div class="search-field">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchQuery" placeholder="Должность или профессия" autocomplete="off">
+            </div>
+            <div class="search-field city-field">
+                <i class="fas fa-map-marker-alt"></i>
+                <input type="text" id="cityInput" placeholder="Город" value="Брянск" autocomplete="off">
+            </div>
+            <button class="btn" id="searchBtn"><i class="fas fa-search"></i> Найти</button>
+        </div>
+    </div>
+
+    <div id="resumesList" class="resumes-grid">
+        <div class="empty-state">
+            <i class="fas fa-file-alt"></i>
+            <p>Введите запрос для поиска резюме</p>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="resumeDetailModal" style="display:none;">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h2 id="detailTitle"><i class="fas fa-file-alt"></i> Резюме</h2>
+            <button class="modal-close" onclick="closeDetail()">&times;</button>
+        </div>
+        <div class="modal-body" id="detailBody"></div>
+    </div>
+</div>
+
+<footer class="footer">
+    <div class="footer-content">
+        <div class="footer-col">
+            <h4>О компании</h4>
+            <a href="#">Наши вакансии</a>
+            <a href="#">Партнёрам</a>
+            <a href="#">Реклама на сайте</a>
+        </div>
+        <div class="footer-col">
+            <h4>Соискателям</h4>
+            <a href="#">Кандидаты по профессиям</a>
+            <a href="#">Безопасный JobFlow</a>
+        </div>
+        <div class="footer-col">
+            <h4>Работодателям</h4>
+            <a href="resumes-browse.html">Поиск по резюме</a>
+            <a href="#">Этика и комплаенс</a>
+        </div>
+        <div class="footer-col">
+            <h4>Информация</h4>
+            <a href="#">Защита персональных данных</a>
+            <a href="#">ИТ-аккредитация</a>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <div class="footer-copy">
+            <span>Русский</span>
+            <span>&copy; 2026 ООО &laquo;JobFlow&raquo;</span>
+        </div>
+    </div>
+</footer>
+
+<script>
+var urlParams = new URLSearchParams(window.location.search);
+var initialSearch = urlParams.get('search') || '';
+var initialCity = urlParams.get('city') || 'Брянск';
+
+if (initialSearch) document.getElementById('searchQuery').value = initialSearch;
+if (initialCity) document.getElementById('cityInput').value = initialCity;
+
+function searchResumes() {
+    var search = document.getElementById('searchQuery').value.trim();
+    var city = document.getElementById('cityInput').value.trim();
+    var token = localStorage.getItem('jobflow_token');
+    if (!token) {
+        window.location.href = 'login.html';
+        return;
+    }
+    var params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (city) params.set('city', city);
+    fetch('/api/resumes/browse?' + params.toString(), {
+        headers: {'Authorization': 'Bearer ' + token}
+    })
+    .then(function(res) {
+        if (res.status === 401 || res.status === 403) {
+            alert('Доступно только для работодателей');
+            return null;
+        }
+        return res.json();
+    })
+    .then(function(resumes) {
+        if (!resumes) return;
+        var container = document.getElementById('resumesList');
+        if (!resumes || resumes.length === 0) {
+            container.innerHTML = '<div class="empty-state"><i class="fas fa-file-alt"></i><p>Резюме не найдены</p></div>';
+            return;
+        }
+        container.innerHTML = resumes.map(function(r) {
+            var fullName = ((r.candidate_name || '') + ' ' + (r.candidate_surname || '')).trim() || 'Кандидат';
+            return '<div class="resume-card" onclick="showDetail(' + r.id + ')">' +
+                '<div class="resume-card-header">' +
+                    '<div class="resume-avatar"><i class="fas fa-user"></i></div>' +
+                    '<div class="resume-candidate-info">' +
+                        '<div class="resume-candidate-name">' + escapeHtml(fullName) + '</div>' +
+                        '<div class="resume-title">' + escapeHtml(r.title || 'Без названия') + '</div>' +
+                    '</div>' +
+                '</div>' +
+                (r.position ? '<div class="resume-position"><i class="fas fa-briefcase"></i> ' + escapeHtml(r.position) + '</div>' : '') +
+                '<div class="resume-meta">' +
+                    (r.city ? '<span><i class="fas fa-map-marker-alt"></i> ' + escapeHtml(r.city) + '</span>' : '') +
+                    (r.salary ? '<span><i class="fas fa-money-bill-wave"></i> ' + escapeHtml(r.salary) + '</span>' : '') +
+                '</div>' +
+                '<div class="resume-tags">' +
+                    (r.education ? '<span class="tag"><i class="fas fa-graduation-cap"></i> ' + escapeHtml(r.education) + '</span>' : '') +
+                    (r.employment ? '<span class="tag"><i class="fas fa-clock"></i> ' + escapeHtml(r.employment) + '</span>' : '') +
+                    (r.experience ? '<span class="tag"><i class="fas fa-star"></i> ' + escapeHtml(r.experience).substring(0, 40) + '</span>' : '') +
+                '</div>' +
+                (r.skills ? '<div class="resume-skills"><i class="fas fa-tools"></i> ' + escapeHtml(r.skills).substring(0, 80) + '</div>' : '') +
+            '</div>';
+        }).join('');
+    })
+    .catch(function(err) { alert('Ошибка: ' + (err.message || err)); });
+}
+
+function showDetail(id) {
+    var token = localStorage.getItem('jobflow_token');
+    fetch('/api/resumes/' + id, {
+        headers: {'Authorization': 'Bearer ' + token}
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(r) {
+        var fullName = ((r.candidate_name || '') + ' ' + (r.candidate_surname || '')).trim() || 'Кандидат';
+        document.getElementById('detailTitle').innerHTML = '<i class="fas fa-file-alt"></i> ' + escapeHtml(r.title || 'Резюме');
+        var body = '';
+        body += '<div class="detail-row"><i class="fas fa-user"></i> <strong>Кандидат:</strong> ' + escapeHtml(fullName) + '</div>';
+        body += '<div class="detail-row"><i class="fas fa-briefcase"></i> <strong>Должность:</strong> ' + escapeHtml(r.position || 'Не указана') + '</div>';
+        body += '<div class="detail-row"><i class="fas fa-map-marker-alt"></i> <strong>Город:</strong> ' + escapeHtml(r.city || 'Не указан') + '</div>';
+        body += '<div class="detail-row"><i class="fas fa-money-bill-wave"></i> <strong>Зарплата:</strong> ' + escapeHtml(r.salary || 'Не указана') + '</div>';
+        body += '<div class="detail-row"><i class="fas fa-graduation-cap"></i> <strong>Образование:</strong> ' + escapeHtml(r.education || 'Не указано') + '</div>';
+        body += '<div class="detail-row"><i class="fas fa-clock"></i> <strong>Занятость:</strong> ' + escapeHtml(r.employment || 'Не указана') + '</div>';
+        if (r.languages) body += '<div class="detail-row"><i class="fas fa-language"></i> <strong>Языки:</strong> ' + escapeHtml(r.languages) + '</div>';
+        if (r.driving) body += '<div class="detail-row"><i class="fas fa-car"></i> <strong>Вождение:</strong> ' + escapeHtml(r.driving) + '</div>';
+        if (r.skills) body += '<div class="detail-section"><h3><i class="fas fa-tools"></i> Навыки</h3><p>' + escapeHtml(r.skills) + '</p></div>';
+        if (r.experience) body += '<div class="detail-section"><h3><i class="fas fa-briefcase"></i> Опыт</h3><p>' + escapeHtml(r.experience) + '</p></div>';
+        if (r.about) body += '<div class="detail-section"><h3><i class="fas fa-align-left"></i> О себе</h3><p>' + escapeHtml(r.about) + '</p></div>';
+        document.getElementById('detailBody').innerHTML = body;
+        document.getElementById('resumeDetailModal').style.display = 'flex';
+    })
+    .catch(function(err) { alert('Ошибка: ' + (err.message || err)); });
+}
+
+function closeDetail() {
+    document.getElementById('resumeDetailModal').style.display = 'none';
+}
+
+document.getElementById('searchBtn').addEventListener('click', searchResumes);
+document.getElementById('searchQuery').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') searchResumes();
+});
+
+document.getElementById('resumeDetailModal').addEventListener('click', function(e) {
+    if (e.target === this) closeDetail();
+});
+
+function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+}
+
+if (initialSearch) searchResumes();
+</script>
+<script src="city-loader.js"></script>
+<script src="nav-auth.js"></script>
+</body>
+</html>

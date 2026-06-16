@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+    <title>JobFlow — Помощь</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <link rel="stylesheet" href="css\help.css">
+</head>
+
+<body>
+
+<div class="top-nav">
+    <div class="nav-container">
+
+        <div class="nav-links">
+            <a href="index.html"><i class="fas fa-briefcase"></i> Ищу работу</a>
+            <a href="sotrudnick.html"><i class="fas fa-users"></i> Ищу сотрудника</a>
+            <a href="servise.html"><i class="fas fa-concierge-bell"></i> Сервисы</a>
+            <a href="help.html"><i class="fas fa-question-circle"></i> Помощь</a>
+        </div>
+
+        <div class="nav-right">
+            <a href="city.html"><i class="fas fa-map-marker-alt"></i> Брянск</a>
+
+            <a href="login.html">
+                <i class="fas fa-sign-in-alt"></i> Войти
+            </a>
+
+            <a href="rezume.html" class="btn-resume">
+                <i class="fas fa-file-alt"></i> Создать резюме
+            </a>
+        </div>
+
+    </div>
+</div>
+
+<div class="main-wrapper">
+
+    <div class="hero-section">
+        <h1>Чем можем помочь?</h1>
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="helpSearch" placeholder="Опишите вашу проблему или введите вопрос" autocomplete="off">
+        </div>
+    </div>
+
+    <div class="section-label">
+        <i class="fas fa-hand-pointer"></i>
+        Выберите тему
+    </div>
+
+    <div class="topics-grid">
+
+        <a href="#" class="topic-card">
+            <div class="topic-icon blue">
+                <i class="fas fa-search"></i>
+            </div>
+            <h3>Поиск работы</h3>
+            <p>Как искать вакансии, настраивать фильтры и подписки</p>
+        </a>
+
+        <a href="#" class="topic-card">
+            <div class="topic-icon green">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <h3>Резюме</h3>
+            <p>Создание, редактирование и публикация резюме</p>
+        </a>
+
+        <a href="#" class="topic-card">
+            <div class="topic-icon orange">
+                <i class="fas fa-users"></i>
+            </div>
+            <h3>Работодателям</h3>
+            <p>Размещение вакансий и поиск сотрудников</p>
+        </a>
+
+        <a href="#" class="topic-card">
+            <div class="topic-icon purple">
+                <i class="fas fa-crown"></i>
+            </div>
+            <h3>Подписки и сервисы</h3>
+            <p>JobFlow PRO, готовое резюме, рекомендации</p>
+        </a>
+
+        <a href="#" class="topic-card">
+            <div class="topic-icon teal">
+                <i class="fas fa-lock"></i>
+            </div>
+            <h3>Безопасность</h3>
+            <p>Защита данных, мошенничество, блокировка</p>
+        </a>
+
+        <a href="#" class="topic-card">
+            <div class="topic-icon red">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <h3>Аккаунт</h3>
+            <p>Регистрация, вход, восстановление пароля</p>
+        </a>
+
+    </div>
+
+    <div class="section-label">
+        <i class="fas fa-star"></i>
+        Популярные вопросы
+    </div>
+
+    <div class="faq-list">
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="this.classList.toggle('open')">
+                <span>Как создать резюме?</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                <p>Нажмите «Создать резюме» в верхнем меню. Заполните поля: имя, должность, город, опыт, навыки и образование. Нажмите «Опубликовать» — ваше резюме станет доступно работодателям.</p>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="this.classList.toggle('open')">
+                <span>Как откликнуться на вакансию?</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                <p>Найдите подходящую вакансию через поиск или каталог, откройте её и нажмите кнопку «Откликнуться». К вашему отклику автоматически прикрепится резюме.</p>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="this.classList.toggle('open')">
+                <span>Как разместить вакансию работодателю?</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                <p>Перейдите в раздел «Ищу сотрудника», зарегистрируйтесь как работодатель и нажмите «Разместить вакансию». Заполните описание, требования и условия — вакансия будет опубликована после оплаты.</p>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="this.classList.toggle('open')">
+                <span>Как восстановить пароль?</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                <p>Нажмите «Войти» → «Забыли пароль?». Введите email, указанный при регистрации, и следуйте инструкциям в письме для сброса пароля.</p>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="this.classList.toggle('open')">
+                <span>Как скрыть или удалить резюме?</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                <p>Откройте резюме, нажмите «Редактировать» и выберите статус «Не ищу работу» — резюме перестанет отображаться в поиске. Для полного удаления обратитесь в поддержку.</p>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="this.classList.toggle('open')">
+                <span>Что входит в подписку JobFlow PRO?</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                <p>Подписка PRO даёт: выделение откликов, просмотр контактов работодателей, доступ к расширенной аналитике и приоритетную поддержку. Подробнее — в разделе «Сервисы».</p>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="this.classList.toggle('open')">
+                <span>Как защититься от мошенников?</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                <p>Не переводите деньги работодателям до начала работы. Проверяйте компанию в каталоге. Если вакансия кажется подозрительной — нажмите «Пожаловаться» на странице вакансии.</p>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="this.classList.toggle('open')">
+                <span>Как изменить город поиска?</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                <p>Нажмите на название города в верхнем меню и выберите нужный из списка или введите название вручную.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="section-label">
+        <i class="fas fa-book-open"></i>
+        Полезные инструкции
+    </div>
+
+    <div class="guides-grid">
+
+        <div class="guide-card">
+            <div class="guide-step">1</div>
+            <div class="guide-icon">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <h3>Регистрация</h3>
+            <p>Как создать аккаунт соискателя или работодателя</p>
+            <a href="#" class="guide-link">Читать <i class="fas fa-arrow-right"></i></a>
+        </div>
+
+        <div class="guide-card">
+            <div class="guide-step">2</div>
+            <div class="guide-icon">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <h3>Составление резюме</h3>
+            <p>Как заполнить каждое поле, чтобы привлечь работодателей</p>
+            <a href="#" class="guide-link">Читать <i class="fas fa-arrow-right"></i></a>
+        </div>
+
+        <div class="guide-card">
+            <div class="guide-step">3</div>
+            <div class="guide-icon">
+                <i class="fas fa-paper-plane"></i>
+            </div>
+            <h3>Отклик на вакансию</h3>
+            <p>Как правильно откликаться и что писать сопроводительном письме</p>
+            <a href="#" class="guide-link">Читать <i class="fas fa-arrow-right"></i></a>
+        </div>
+
+        <div class="guide-card">
+            <div class="guide-step">4</div>
+            <div class="guide-icon">
+                <i class="fas fa-comments"></i>
+            </div>
+            <h3>Собеседование</h3>
+            <p>Как подготовиться и пройти собеседование успешно</p>
+            <a href="#" class="guide-link">Читать <i class="fas fa-arrow-right"></i></a>
+        </div>
+
+    </div>
+
+    <div class="contact-banner">
+
+        <div class="contact-text">
+            <h2>Не нашли ответ?</h2>
+            <p>Свяжитесь с нашей службой поддержки — мы ответим в течение 24 часов</p>
+        </div>
+
+        <div class="contact-actions">
+
+            <a href="#" class="contact-btn">
+                <i class="fas fa-comment-dots"></i>
+                <span>Написать в чат</span>
+            </a>
+
+            <a href="#" class="contact-btn">
+                <i class="fas fa-envelope"></i>
+                <span>Написать на почту</span>
+            </a>
+
+            <a href="#" class="contact-btn">
+                <i class="fas fa-phone-alt"></i>
+                <span>Позвонить</span>
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+<footer class="footer">
+
+    <div class="footer-content">
+
+        <div class="footer-col">
+            <h4>О компании</h4>
+            <a href="#">Наши вакансии</a>
+            <a href="#">Партнёрам</a>
+            <a href="#">Реклама на сайте</a>
+            <a href="#">Новости и статьи</a>
+            <a href="#">Инвесторам</a>
+        </div>
+
+        <div class="footer-col">
+            <h4>Соискателям</h4>
+            <a href="#">Кандидаты по профессиям</a>
+            <a href="#">Производственный календарь</a>
+            <a href="#">Требования к ПО</a>
+            <a href="#">Безопасный JobFlow</a>
+        </div>
+
+        <div class="footer-col">
+            <h4>Работодателям</h4>
+            <a href="#">Поиск работы</a>
+            <a href="#">Поиск по резюме</a>
+            <a href="#">Мобильное приложение</a>
+            <a href="#">Этика и комплаенс</a>
+        </div>
+
+        <div class="footer-col">
+            <h4>Информация</h4>
+            <a href="#">Оказание услуг</a>
+            <a href="#">Использование сайтов</a>
+            <a href="#">Защита персональных данных</a>
+            <a href="#">ИТ-аккредитация</a>
+        </div>
+
+    </div>
+
+    <div class="footer-bottom">
+
+        <p>На информационном ресурсе JobFlow применяются рекомендательные технологии (информационные технологии предоставления информации на основе сбора, систематизации и анализа сведений, относящихся к предпочтениям пользователей сети «Интернет», находящихся на территории Российской Федерации)</p>
+
+        <div class="footer-copy">
+            <span>Русский</span>
+            <span>© 2026 ООО «JobFlow»</span>
+        </div>
+
+    </div>
+
+</footer>
+
+<script>
+document.getElementById('helpSearch').addEventListener('input', function() {
+    var query = this.value.toLowerCase();
+    document.querySelectorAll('.faq-item').forEach(function(item) {
+        var text = item.textContent.toLowerCase();
+        item.style.display = text.indexOf(query) !== -1 ? '' : 'none';
+    });
+});
+</script>
+<script src="city-loader.js"></script>
+<script src="nav-auth.js"></script>
+
+</body>
+</html>
