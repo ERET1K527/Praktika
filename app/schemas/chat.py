@@ -24,6 +24,8 @@ class ChatOut(BaseModel):
     created_at: datetime
     vacancy_title: str | None = None
     other_user_email: str | None = None
+    other_user_id: int | None = None
     last_message: str | None = None
+    application_status: str | None = None
 
     model_config = {"from_attributes": True}

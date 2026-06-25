@@ -32,17 +32,22 @@ def api_create_chat(application_id: int, current_user: User = Depends(get_curren
             if employer:
                 employer_user = db.get(User, employer.user_id)
         other_email = None
+        other_user_id = None
         if candidate and candidate.user_id == current_user.id:
             other_email = employer_user.email if employer_user else None
+            other_user_id = employer.user_id if employer else None
         elif employer and employer.user_id == current_user.id:
             other_email = candidate_user.email if candidate_user else None
+            other_user_id = candidate.user_id if candidate else None
         return ChatOut(
             id=chat.id,
             application_id=chat.application_id,
             created_at=chat.created_at,
             vacancy_title=vacancy.title if vacancy else None,
             other_user_email=other_email,
+            other_user_id=other_user_id,
             last_message=None,
+            application_status=application.status.value if application else None,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

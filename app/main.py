@@ -19,6 +19,7 @@ from app.api.admin import router as admin_router
 from app.api.vacancies import router as vacancies_router
 from app.api.chat import router as chat_router
 from app.api.resumes import router as resumes_router
+from app.api.presence import router as presence_router
 from app.core.config import settings
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -67,18 +68,19 @@ app.include_router(admin_router, prefix="/api")
 app.include_router(vacancies_router, prefix="/api")
 app.include_router(chat_router, prefix="/api")
 app.include_router(resumes_router, prefix="/api")
+app.include_router(presence_router, prefix="/api")
 
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "app", "static")), name="static")
 
 
 @app.get("/")
 def serve_index():
-    return FileResponse(os.path.join(BASE_DIR, "index.html"))
+    return FileResponse(os.path.join(BASE_DIR, "html", "index.html"))
 
 
 @app.get("/{name}.html")
 def serve_page(name: str):
-    return FileResponse(os.path.join(BASE_DIR, f"{name}.html"))
+    return FileResponse(os.path.join(BASE_DIR, "html", f"{name}.html"))
 
 
 @app.get("/css/{name}.css")
@@ -86,6 +88,6 @@ def serve_css(name: str):
     return FileResponse(os.path.join(BASE_DIR, "css", f"{name}.css"))
 
 
-@app.get("/{name}.js")
+@app.get("/js/{name}.js")
 def serve_js(name: str):
-    return FileResponse(os.path.join(BASE_DIR, f"{name}.js"))
+    return FileResponse(os.path.join(BASE_DIR, "js", f"{name}.js"))

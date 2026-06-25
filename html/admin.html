@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <script src="js/auth-guard.js"></script>
+    <title>JobFlow — Панель администратора</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Inter',sans-serif; background:#f0f4f8; color:#1f3e54; min-height:100vh; }
+
+        .top-nav { background:#1f3e54; padding:0 2rem; position:sticky; top:0; z-index:100; }
+        .nav-container { max-width:1300px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; height:56px; }
+        .nav-links a, .nav-right a { color:#a8c4d8; text-decoration:none; font-size:.9rem; margin-right:1.2rem; transition:color .2s; }
+        .nav-links a:hover, .nav-right a:hover, .nav-right a.active-link { color:#fff; }
+        .nav-links a i, .nav-right a i { margin-right:4px; }
+
+        .main-wrapper { max-width:1300px; margin:2rem auto; padding:0 2rem; }
+
+        .admin-header { margin-bottom:2rem; }
+        .admin-header h1 { font-size:1.6rem; font-weight:700; }
+        .admin-header p { color:#5d7387; margin-top:.4rem; }
+
+        .tabs { display:flex; gap:0; border-bottom:2px solid #d6e2ec; margin-bottom:1.5rem; }
+        .tab-btn { background:none; border:none; padding:.75rem 1.4rem; font-size:.95rem; font-weight:500; color:#5d7387; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; transition:all .2s; }
+        .tab-btn:hover { color:#1f3e54; }
+        .tab-btn.active { color:#1f6392; border-bottom-color:#1f6392; }
+
+        .tab-content { display:none; }
+        .tab-content.active { display:block; }
+
+        .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:1rem; margin-bottom:2rem; }
+        .stat-card { background:#fff; border-radius:12px; padding:1.2rem; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+        .stat-card .stat-icon { font-size:1.5rem; color:#1f6392; margin-bottom:.5rem; }
+        .stat-card .stat-val { font-size:1.8rem; font-weight:700; }
+        .stat-card .stat-label { color:#5d7387; font-size:.82rem; margin-top:.2rem; }
+
+        .data-table { width:100%; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.06); border-collapse:collapse; }
+        .data-table th { background:#eaf1f7; padding:.7rem 1rem; text-align:left; font-size:.82rem; font-weight:600; color:#5d7387; text-transform:uppercase; letter-spacing:.5px; }
+        .data-table td { padding:.7rem 1rem; border-top:1px solid #eef3f8; font-size:.9rem; vertical-align:middle; }
+        .data-table tr:hover td { background:#f7fafc; }
+
+        .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:.78rem; font-weight:600; }
+        .badge-blocked { background:#fde8e8; color:#c0392b; }
+        .badge-active { background:#e8fdf0; color:#27ae60; }
+        .badge-pending { background:#fef5e7; color:#e67e22; }
+        .badge-rejected { background:#fde8e8; color:#c0392b; }
+        .badge-approved { background:#e8fdf0; color:#27ae60; }
+        .badge-draft { background:#eef3f8; color:#5d7387; }
+        .badge-published { background:#e8f0fe; color:#1f6392; }
+        .badge-admin { background:#f0e6ff; color:#8e44ad; }
+        .badge-employer { background:#e8f0fe; color:#1f6392; }
+        .badge-candidate { background:#e8fdf0; color:#27ae60; }
+
+        .btn { display:inline-flex; align-items:center; gap:4px; padding:6px 14px; border:none; border-radius:8px; font-size:.82rem; font-weight:500; cursor:pointer; transition:all .2s; }
+        .btn-sm { padding:4px 10px; font-size:.78rem; }
+        .btn-primary { background:#1f6392; color:#fff; }
+        .btn-primary:hover { background:#0e4a6e; }
+        .btn-danger { background:#e74c3c; color:#fff; }
+        .btn-danger:hover { background:#c0392b; }
+        .btn-warning { background:#e67e22; color:#fff; }
+        .btn-warning:hover { background:#d35400; }
+        .btn-success { background:#27ae60; color:#fff; }
+        .btn-success:hover { background:#219a52; }
+        .btn-secondary { background:#eef3f8; color:#1f3e54; }
+        .btn-secondary:hover { background:#d6e2ec; }
+        .btn[disabled] { opacity:.5; cursor:not-allowed; }
+
+        .actions-cell { display:flex; gap:6px; flex-wrap:wrap; }
+
+        .empty-state { text-align:center; padding:3rem 1rem; color:#5d7387; }
+        .empty-state i { font-size:3rem; margin-bottom:1rem; opacity:.3; }
+        .empty-state p { font-size:1rem; }
+
+        .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:200; align-items:center; justify-content:center; }
+        .modal-overlay.open { display:flex; }
+        .modal-window { background:#fff; border-radius:16px; padding:2rem; width:90%; max-width:700px; max-height:85vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.2); }
+        .modal-close { background:none; border:none; font-size:1.3rem; cursor:pointer; float:right; color:#5d7387; }
+        .modal-close:hover { color:#1f3e54; }
+        .modal-title { font-size:1.2rem; font-weight:600; margin-bottom:1.5rem; }
+
+        .form-group { margin-bottom:1rem; }
+        .form-group label { display:block; font-size:.85rem; font-weight:500; margin-bottom:.3rem; color:#5d7387; }
+        .form-group input, .form-group textarea, .form-group select { width:100%; padding:.6rem .8rem; border:1px solid #d6e2ec; border-radius:8px; font-size:.9rem; font-family:inherit; transition:border .2s; }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline:none; border-color:#1f6392; }
+        .form-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+
+        .toast { position:fixed; bottom:2rem; right:2rem; background:#1f3e54; color:#fff; padding:.8rem 1.4rem; border-radius:10px; font-size:.9rem; z-index:300; transform:translateY(100px); opacity:0; transition:all .3s; }
+        .toast.show { transform:translateY(0); opacity:1; }
+        .toast.success { background:#27ae60; }
+        .toast.error { background:#e74c3c; }
+    </style>
+</head>
+<body>
+
+<div class="top-nav">
+    <div class="nav-container">
+        <div class="nav-links">
+            <a href="index.html"><i class="fas fa-briefcase"></i> Ищу работу</a>
+            <a href="sotrudnick.html"><i class="fas fa-users"></i> Ищу сотрудника</a>
+        </div>
+        <div class="nav-right">
+            <a href="account.html"><i class="fas fa-user-circle"></i> Аккаунт</a>
+            <a href="admin.html" class="active-link"><i class="fas fa-shield-alt"></i> Админ-панель</a>
+        </div>
+    </div>
+</div>
+
+<div class="main-wrapper">
+
+    <div class="admin-header">
+        <h1><i class="fas fa-shield-alt"></i> Панель администратора</h1>
+        <p>Управление пользователями, вакансиями и резюме</p>
+    </div>
+
+    <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="stat-icon"><i class="fas fa-users"></i></div><div class="stat-val" id="statUsers">—</div><div class="stat-label">Пользователей</div></div>
+        <div class="stat-card"><div class="stat-icon"><i class="fas fa-user-graduate"></i></div><div class="stat-val" id="statCandidates">—</div><div class="stat-label">Кандидатов</div></div>
+        <div class="stat-card"><div class="stat-icon"><i class="fas fa-building"></i></div><div class="stat-val" id="statEmployers">—</div><div class="stat-label">Работодателей</div></div>
+        <div class="stat-card"><div class="stat-icon"><i class="fas fa-briefcase"></i></div><div class="stat-val" id="statVacancies">—</div><div class="stat-label">Вакансий</div></div>
+        <div class="stat-card"><div class="stat-icon"><i class="fas fa-paper-plane"></i></div><div class="stat-val" id="statApps">—</div><div class="stat-label">Откликов</div></div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="users" onclick="switchTab('users')"><i class="fas fa-users"></i> Пользователи</button>
+        <button class="tab-btn" data-tab="vacancies" onclick="switchTab('vacancies')"><i class="fas fa-briefcase"></i> Вакансии</button>
+        <button class="tab-btn" data-tab="resumes" onclick="switchTab('resumes')"><i class="fas fa-file-alt"></i> Резюме</button>
+    </div>
+
+    <div class="tab-content active" id="tab-users">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th><th>Email</th><th>Телефон</th><th>Роль</th><th>Статус</th><th>Дата</th><th>Действия</th>
+                </tr>
+            </thead>
+            <tbody id="usersTableBody"></tbody>
+        </table>
+    </div>
+
+    <div class="tab-content" id="tab-vacancies">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th><th>Название</th><th>Компания</th><th>Город</th><th>Статус</th><th>Модерация</th><th>Действия</th>
+                </tr>
+            </thead>
+            <tbody id="vacanciesTableBody"></tbody>
+        </table>
+    </div>
+
+    <div class="tab-content" id="tab-resumes">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th><th>Название</th><th>Кандидат</th><th>Должность</th><th>Статус</th><th>Модерация</th><th>Действия</th>
+                </tr>
+            </thead>
+            <tbody id="resumesTableBody"></tbody>
+        </table>
+    </div>
+
+</div>
+
+<div class="modal-overlay" id="editModal">
+    <div class="modal-window">
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+        <div class="modal-title" id="modalTitle">Редактирование</div>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var token = localStorage.getItem('jobflow_token');
+if (!token) { window.location.href = 'login.html'; }
+
+function api(url, opts) {
+    opts = opts || {};
+    opts.headers = opts.headers || {};
+    opts.headers['Authorization'] = 'Bearer ' + token;
+    if (opts.body && typeof opts.body === 'object') {
+        opts.headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(opts.body);
+    }
+    return fetch(url, opts).then(function(res) {
+        if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem('jobflow_token');
+            window.location.href = 'login.html';
+            return Promise.reject(new Error('Unauthorized'));
+        }
+        return res.json();
+    });
+}
+
+function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+    document.querySelector('.tab-btn[data-tab="' + tab + '"]').classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+    if (tab === 'users') loadUsers();
+    if (tab === 'vacancies') loadVacancies();
+    if (tab === 'resumes') loadResumes();
+}
+
+function showToast(msg, type) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + (type || '');
+    t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 3000);
+}
+
+function roleBadge(role) {
+    var cls = role === 'admin' ? 'admin' : role === 'employer' ? 'employer' : 'candidate';
+    var labels = {admin:'Админ', employer:'Работодатель', candidate:'Кандидат'};
+    return '<span class="badge badge-' + cls + '">' + (labels[role] || role) + '</span>';
+}
+
+function blockedBadge(isBlocked) {
+    return isBlocked ? '<span class="badge badge-blocked">Заблокирован</span>' : '<span class="badge badge-active">Активен</span>';
+}
+
+function modBadge(status) {
+    if (status === 'approved') return '<span class="badge badge-approved">Одобрено</span>';
+    if (status === 'rejected_needs_fix') return '<span class="badge badge-rejected">На доработке</span>';
+    if (status === 'pending') return '<span class="badge badge-pending">На проверке</span>';
+    return '<span class="badge badge-draft">' + esc(status || '—') + '</span>';
+}
+
+function vacStatusBadge(status) {
+    if (status === 'published') return '<span class="badge badge-published">Опубликована</span>';
+    return '<span class="badge badge-draft">Черновик</span>';
+}
+
+function esc(str) {
+    var d = document.createElement('div');
+    d.textContent = str || '';
+    return d.innerHTML;
+}
+
+function formatDate(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('ru-RU');
+}
+
+function loadStats() {
+    api('/api/admin/dashboard').then(function(d) {
+        document.getElementById('statUsers').textContent = d.total_users || 0;
+        document.getElementById('statCandidates').textContent = d.total_candidates || 0;
+        document.getElementById('statEmployers').textContent = d.total_employers || 0;
+        document.getElementById('statVacancies').textContent = d.total_vacancies || 0;
+        document.getElementById('statApps').textContent = d.total_applications || 0;
+    });
+}
+
+function loadUsers() {
+    api('/api/admin/users?limit=200').then(function(users) {
+        var tbody = document.getElementById('usersTableBody');
+        if (!users || !users.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="fas fa-users"></i><p>Нет пользователей</p></td></tr>';
+            return;
+        }
+        tbody.innerHTML = users.map(function(u) {
+            var blockBtn = u.is_blocked
+                ? '<button class="btn btn-sm btn-success" onclick="unblockUser(' + u.id + ')"><i class="fas fa-unlock"></i> Разблокировать</button>'
+                : '<button class="btn btn-sm btn-danger" onclick="blockUser(' + u.id + ')"><i class="fas fa-ban"></i> Заблокировать</button>';
+            var deleteBtn = '<button class="btn btn-sm btn-danger" onclick="deleteUser(' + u.id + ')"><i class="fas fa-trash"></i></button>';
+            return '<tr>' +
+                '<td>' + u.id + '</td>' +
+                '<td>' + esc(u.email || '—') + '</td>' +
+                '<td>' + esc(u.phone || '—') + '</td>' +
+                '<td>' + roleBadge(u.role) + '</td>' +
+                '<td>' + blockedBadge(u.is_blocked) + '</td>' +
+                '<td>' + formatDate(u.created_at) + '</td>' +
+                '<td class="actions-cell">' + (u.role !== 'admin' ? blockBtn + deleteBtn : '<span class="badge badge-admin">Админ</span>') + '</td>' +
+            '</tr>';
+        }).join('');
+    });
+}
+
+function loadVacancies() {
+    api('/api/admin/vacancies?limit=200').then(function(vacancies) {
+        var tbody = document.getElementById('vacanciesTableBody');
+        if (!vacancies || !vacancies.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="fas fa-briefcase"></i><p>Нет вакансий</p></td></tr>';
+            return;
+        }
+        tbody.innerHTML = vacancies.map(function(v) {
+            var mod = v.moderation_status || 'approved';
+            var approveBtn = mod !== 'approved' ? '<button class="btn btn-sm btn-success" onclick="approveVacancy(' + v.id + ')"><i class="fas fa-check"></i> Одобрить</button>' : '';
+            var rejectBtn = mod !== 'rejected_needs_fix' ? '<button class="btn btn-sm btn-warning" onclick="rejectVacancy(' + v.id + ')"><i class="fas fa-exclamation-triangle"></i> На доработку</button>' : '';
+            return '<tr>' +
+                '<td>' + v.id + '</td>' +
+                '<td>' + esc(v.title) + '</td>' +
+                '<td>' + esc(v.company_name || '—') + '</td>' +
+                '<td>' + esc(v.city || '—') + '</td>' +
+                '<td>' + vacStatusBadge(v.status) + '</td>' +
+                '<td>' + modBadge(mod) + '</td>' +
+                '<td class="actions-cell">' +
+                    '<button class="btn btn-sm btn-primary" onclick="editVacancy(' + v.id + ')"><i class="fas fa-edit"></i></button>' +
+                    approveBtn + rejectBtn +
+                    '<button class="btn btn-sm btn-danger" onclick="deleteVacancy(' + v.id + ')"><i class="fas fa-trash"></i></button>' +
+                '</td>' +
+            '</tr>';
+        }).join('');
+    });
+}
+
+function loadResumes() {
+    api('/api/admin/resumes?limit=200').then(function(resumes) {
+        var tbody = document.getElementById('resumesTableBody');
+        if (!resumes || !resumes.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="fas fa-file-alt"></i><p>Нет резюме</p></td></tr>';
+            return;
+        }
+        tbody.innerHTML = resumes.map(function(r) {
+            var mod = r.moderation_status || 'approved';
+            var approveBtn = mod !== 'approved' ? '<button class="btn btn-sm btn-success" onclick="approveResume(' + r.id + ')"><i class="fas fa-check"></i> Одобрить</button>' : '';
+            var rejectBtn = mod !== 'rejected_needs_fix' ? '<button class="btn btn-sm btn-warning" onclick="rejectResume(' + r.id + ')"><i class="fas fa-exclamation-triangle"></i> На доработку</button>' : '';
+            var candidateName = ((r.candidate_name || '') + ' ' + (r.candidate_surname || '')).trim() || '—';
+            return '<tr>' +
+                '<td>' + r.id + '</td>' +
+                '<td>' + esc(r.title) + '</td>' +
+                '<td>' + esc(candidateName) + '</td>' +
+                '<td>' + esc(r.position || '—') + '</td>' +
+                '<td>' + (r.status === 'published' ? '<span class="badge badge-published">Опубликовано</span>' : '<span class="badge badge-draft">Черновик</span>') + '</td>' +
+                '<td>' + modBadge(mod) + '</td>' +
+                '<td class="actions-cell">' +
+                    '<button class="btn btn-sm btn-primary" onclick="editResume(' + r.id + ')"><i class="fas fa-edit"></i></button>' +
+                    approveBtn + rejectBtn +
+                    '<button class="btn btn-sm btn-danger" onclick="deleteResume(' + r.id + ')"><i class="fas fa-trash"></i></button>' +
+                '</td>' +
+            '</tr>';
+        }).join('');
+    });
+}
+
+function blockUser(userId) {
+    if (!confirm('Заблокировать этого пользователя? Он не сможет войти на сайт.')) return;
+    api('/api/admin/users/' + userId + '/block', {method: 'POST'}).then(function(d) {
+        showToast(d.detail || 'Пользователь заблокирован', 'success');
+        loadUsers(); loadStats();
+    });
+}
+
+function unblockUser(userId) {
+    if (!confirm('Разблокировать этого пользователя?')) return;
+    api('/api/admin/users/' + userId + '/unblock', {method: 'POST'}).then(function(d) {
+        showToast(d.detail || 'Пользователь разблокирован', 'success');
+        loadUsers(); loadStats();
+    });
+}
+
+function deleteUser(userId) {
+    if (!confirm('Удалить этого пользователя безвозвратно?')) return;
+    api('/api/admin/users/' + userId, {method: 'DELETE'}).then(function(d) {
+        showToast(d.detail || 'Пользователь удалён', 'success');
+        loadUsers(); loadStats();
+    });
+}
+
+function deleteVacancy(vacancyId) {
+    if (!confirm('Удалить эту вакансию безвозвратно?')) return;
+    api('/api/admin/vacancies/' + vacancyId, {method: 'DELETE'}).then(function(d) {
+        showToast(d.detail || 'Вакансия удалена', 'success');
+        loadVacancies(); loadStats();
+    });
+}
+
+function rejectVacancy(vacancyId) {
+    if (!confirm('Отправить вакансию на доработку? Автор получит уведомление.')) return;
+    api('/api/admin/vacancies/' + vacancyId + '/reject', {method: 'POST'}).then(function(d) {
+        showToast('Вакансия отправлена на доработку', 'warning');
+        loadVacancies();
+    });
+}
+
+function approveVacancy(vacancyId) {
+    api('/api/admin/vacancies/' + vacancyId + '/approve', {method: 'POST'}).then(function(d) {
+        showToast('Вакансия одобрена', 'success');
+        loadVacancies();
+    });
+}
+
+function deleteResume(resumeId) {
+    if (!confirm('Удалить это резюме безвозвратно?')) return;
+    api('/api/admin/resumes/' + resumeId, {method: 'DELETE'}).then(function(d) {
+        showToast(d.detail || 'Резюме удалено', 'success');
+        loadResumes(); loadStats();
+    });
+}
+
+function rejectResume(resumeId) {
+    if (!confirm('Отправить резюме на доработку? Автор получит уведомление.')) return;
+    api('/api/admin/resumes/' + resumeId + '/reject', {method: 'POST'}).then(function(d) {
+        showToast('Резюме отправлено на доработку', 'warning');
+        loadResumes();
+    });
+}
+
+function approveResume(resumeId) {
+    api('/api/admin/resumes/' + resumeId + '/approve', {method: 'POST'}).then(function(d) {
+        showToast('Резюме одобрено', 'success');
+        loadResumes();
+    });
+}
+
+function editVacancy(vacancyId) {
+    api('/api/vacancies/' + vacancyId).then(function(v) {
+        document.getElementById('modalTitle').textContent = 'Редактирование вакансии: ' + (v.title || '');
+        document.getElementById('modalBody').innerHTML =
+            '<form id="editVacForm" onsubmit="saveVacancy(event,' + vacancyId + ')">' +
+            '<div class="form-row"><div class="form-group"><label>Название</label><input id="evTitle" value="' + esc(v.title || '') + '"></div>' +
+            '<div class="form-group"><label>Город</label><input id="evCity" value="' + esc(v.city || '') + '"></div></div>' +
+            '<div class="form-row"><div class="form-group"><label>Зарплата</label><input id="evSalary" value="' + esc(v.salary || '') + '"></div>' +
+            '<div class="form-group"><label>Образование</label><input id="evEducation" value="' + esc(v.education || '') + '"></div></div>' +
+            '<div class="form-row"><div class="form-group"><label>Опыт</label><input id="evExperience" value="' + esc(v.experience || '') + '"></div>' +
+            '<div class="form-group"><label>Тип занятости</label><input id="evEmploymentType" value="' + esc(v.employment_type || '') + '"></div></div>' +
+            '<div class="form-group"><label>Формат работы</label><input id="evWorkFormat" value="' + esc(v.work_format || '') + '"></div>' +
+            '<div class="form-group"><label>Описание</label><textarea id="evDesc" rows="3">' + esc(v.description || '') + '</textarea></div>' +
+            '<div class="form-group"><label>Требования</label><textarea id="evRequirements" rows="3">' + esc(v.requirements || '') + '</textarea></div>' +
+            '<div class="form-row"><div class="form-group"><label>Телефон</label><input id="evPhone" value="' + esc(v.contact_phone || '') + '"></div>' +
+            '<div class="form-group"><label>Email</label><input id="evEmail" value="' + esc(v.contact_email || '') + '"></div></div>' +
+            '<div style="margin-top:1rem;"><button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Сохранить</button> ' +
+            '<button type="button" class="btn btn-secondary" onclick="closeModal()">Отмена</button></div>' +
+            '</form>';
+        openModal();
+    });
+}
+
+function saveVacancy(e, vacancyId) {
+    e.preventDefault();
+    var data = {
+        title: document.getElementById('evTitle').value,
+        city: document.getElementById('evCity').value,
+        salary: document.getElementById('evSalary').value,
+        education: document.getElementById('evEducation').value,
+        experience: document.getElementById('evExperience').value,
+        employment_type: document.getElementById('evEmploymentType').value,
+        work_format: document.getElementById('evWorkFormat').value,
+        description: document.getElementById('evDesc').value,
+        requirements: document.getElementById('evRequirements').value,
+        contact_phone: document.getElementById('evPhone').value,
+        contact_email: document.getElementById('evEmail').value,
+    };
+    api('/api/admin/vacancies/' + vacancyId, {method: 'PUT', body: data}).then(function(d) {
+        if (d.id) {
+            showToast('Вакансия обновлена', 'success');
+            closeModal();
+            loadVacancies();
+        } else {
+            showToast(d.detail || 'Ошибка сохранения', 'error');
+        }
+    });
+}
+
+function editResume(resumeId) {
+    api('/api/resumes/' + resumeId).then(function(r) {
+        document.getElementById('modalTitle').textContent = 'Редактирование резюме: ' + (r.title || '');
+        document.getElementById('modalBody').innerHTML =
+            '<form id="editResForm" onsubmit="saveResume(event,' + resumeId + ')">' +
+            '<div class="form-row"><div class="form-group"><label>Название</label><input id="erTitle" value="' + esc(r.title || '') + '"></div>' +
+            '<div class="form-group"><label>Должность</label><input id="erPosition" value="' + esc(r.position || '') + '"></div></div>' +
+            '<div class="form-row"><div class="form-group"><label>Город</label><input id="erCity" value="' + esc(r.city || '') + '"></div>' +
+            '<div class="form-group"><label>Зарплата</label><input id="erSalary" value="' + esc(r.salary || '') + '"></div></div>' +
+            '<div class="form-group"><label>Занятость</label><input id="erEmployment" value="' + esc(r.employment || '') + '"></div>' +
+            '<div class="form-group"><label>Образование</label><input id="erEducation" value="' + esc(r.education || '') + '"></div>' +
+            '<div class="form-group"><label>Навыки</label><input id="erSkills" value="' + esc(r.skills || '') + '"></div>' +
+            '<div class="form-group"><label>Опыт / О себе</label><textarea id="erAbout" rows="3">' + esc(r.about || '') + '</textarea></div>' +
+            '<div class="form-group"><label>Языки</label><input id="erLanguages" value="' + esc(r.languages || '') + '"></div>' +
+            '<div class="form-group"><label>Вождение</label><input id="erDriving" value="' + esc(r.driving || '') + '"></div>' +
+            '<div style="margin-top:1rem;"><button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Сохранить</button> ' +
+            '<button type="button" class="btn btn-secondary" onclick="closeModal()">Отмена</button></div>' +
+            '</form>';
+        openModal();
+    });
+}
+
+function saveResume(e, resumeId) {
+    e.preventDefault();
+    var data = {
+        title: document.getElementById('erTitle').value,
+        position: document.getElementById('erPosition').value,
+        city: document.getElementById('erCity').value,
+        salary: document.getElementById('erSalary').value,
+        employment: document.getElementById('erEmployment').value,
+        education: document.getElementById('erEducation').value,
+        skills: document.getElementById('erSkills').value,
+        about: document.getElementById('erAbout').value,
+        languages: document.getElementById('erLanguages').value,
+        driving: document.getElementById('erDriving').value,
+    };
+    api('/api/admin/resumes/' + resumeId, {method: 'PUT', body: data}).then(function(d) {
+        if (d.id) {
+            showToast('Резюме обновлено', 'success');
+            closeModal();
+            loadResumes();
+        } else {
+            showToast(d.detail || 'Ошибка сохранения', 'error');
+        }
+    });
+}
+
+function openModal() {
+    document.getElementById('editModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+    document.getElementById('editModal').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+
+loadStats();
+loadUsers();
+</script>
+<script src="js/nav-auth.js"></script>
+
+</body>
+</html>

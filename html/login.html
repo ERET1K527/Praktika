@@ -45,7 +45,7 @@
 
     <div class="card" id="loginCard">
 
-        <div class="card-tabs">
+        <div class="card-tabs" data-active="phone">
             <button class="tab active" data-tab="phone" onclick="switchTab('phone')">
                 <i class="fas fa-mobile-alt"></i>
                 Телефон
@@ -86,7 +86,7 @@
                             <i class="fas fa-envelope"></i>
                             <span>Электронная почта</span>
                         </div>
-                        <input type="email" id="loginEmail" class="form-input" placeholder="example@mail.ru" autocomplete="off">
+                        <input type="text" id="loginEmail" class="form-input" placeholder="example@mail.ru" autocomplete="off">
                     </div>
 
                 </div>
@@ -167,6 +167,7 @@ function switchTab(tab) {
     document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
     document.querySelector('.tab[data-tab="' + tab + '"]').classList.add('active');
     document.getElementById(tab + 'Tab').classList.add('active');
+    document.querySelector('.card-tabs').setAttribute('data-active', tab);
     hideError();
 }
 
@@ -221,7 +222,13 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
         submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Войти';
         if (data.access_token) {
             localStorage.setItem('jobflow_token', data.access_token);
-            window.location.href = 'index.html';
+            fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + data.access_token } })
+                .then(function(r) { return r.json(); })
+                .then(function(u) {
+                    var dest = (u.role === 'employer') ? 'sotrudnick.html' : (u.role === 'admin' ? 'admin.html' : 'index.html');
+                    window.location.href = dest;
+                })
+                .catch(function() { window.location.href = 'index.html'; });
         } else {
             showError(data.detail || 'Ошибка входа');
         }
@@ -242,8 +249,8 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     }
 })();
 </script>
-<script src="city-loader.js"></script>
-<script src="nav-auth.js"></script>
+<script src="js/city-loader.js"></script>
+<script src="js/nav-auth.js"></script>
 
 </body>
 </html>

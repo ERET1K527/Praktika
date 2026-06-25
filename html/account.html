@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <script src="js/auth-guard.js"></script>
     <title>JobFlow — Мой аккаунт</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="css\account.css">
+    <link rel="stylesheet" href="css\notifications.css">
 </head>
 <body>
 
@@ -358,6 +360,7 @@
                             </div>
                         </div>
                     </div>
+                    <div class="msg-resizer" id="msgResizer"></div>
                     <div class="msg-main" id="msgMain">
                         <div class="msg-empty-main" id="msgEmptyMain">
                             <div class="msg-empty-icon"><i class="far fa-comment-dots"></i></div>
@@ -366,12 +369,18 @@
                         <div class="msg-conversation" id="msgConversation" style="display:none;">
                             <div class="msg-conversation-header">
                                 <button class="msg-back-btn" onclick="backToChats()"><i class="fas fa-arrow-left"></i></button>
-                                <div class="msg-contact-avatar" id="chatAvatar"><i class="fas fa-user"></i></div>
+                                <div class="avatar-container" id="chatAvatarWrap">
+                                    <div class="msg-contact-avatar" id="chatAvatar"><i class="fas fa-user"></i></div>
+                                    <span class="online-dot"></span>
+                                </div>
                                 <div class="msg-contact-info">
                                     <div class="msg-contact-name" id="chatTitle">—</div>
                                     <div class="msg-contact-vacancy" id="chatVacancy"></div>
+                                    <div class="chat-partner-status" id="partnerStatusContainer">
+                                        <span class="status-dot" id="partnerStatusDot"></span>
+                                        <span class="status-text" id="partnerStatusText">офлайн</span>
+                                    </div>
                                 </div>
-                                <div class="msg-online-dot"></div>
                             </div>
                             <div id="chatMessages" class="msg-messages-area"></div>
                             <div class="msg-date-divider" id="chatDateDivider" style="display:none;"></div>
@@ -380,6 +389,7 @@
                                 <input type="text" id="chatInput" class="msg-input-field" placeholder="Сообщение..." autocomplete="off">
                                 <button type="submit" class="msg-send-btn"><i class="fas fa-paper-plane"></i></button>
                             </form>
+                            <div class="msg-blocked-banner" id="chatBlockedBanner" style="display:none;"></div>
                         </div>
                     </div>
                 </div>
@@ -436,6 +446,20 @@
 
 </div>
 
+<div class="modal-overlay" id="resumeModal" onclick="closeResumeModal()">
+    <div class="modal-window" onclick="event.stopPropagation()">
+        <button class="modal-close" type="button" onclick="closeResumeModal()" title="Закрыть" aria-label="Закрыть">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="resume-doc" id="resumeDocBody"></div>
+        <div class="modal-footer">
+            <button class="btn btn-sm" type="button" onclick="closeResumeModal()">
+                <i class="fas fa-times"></i> Закрыть
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
 var currentUser = null;
 var currentProfile = null;
@@ -454,6 +478,9 @@ function switchSection(section) {
     }
     if (section === 'vacancies') {
         backToVacanciesList();
+    }
+    if (section === 'applications') {
+        loadMyApplications(localStorage.getItem('jobflow_token'));
     }
 }
 
@@ -507,11 +534,22 @@ function loadProfile() {
         if (user.role === 'employer') {
             document.getElementById('menuResume').style.display = 'none';
             document.getElementById('menuVacancies').style.display = '';
-            document.getElementById('navResumeBtn').style.display = 'none';
+            var _nrb = document.getElementById('navResumeBtn'); if (_nrb) _nrb.style.display = 'none';
             document.getElementById('settingsCompanyGroup').style.display = '';
             document.getElementById('settingsCompanyPhoneGroup').style.display = '';
             document.getElementById('settingsCompanySiteGroup').style.display = '';
             loadEmployerProfile(token);
+        } else if (user.role === 'admin') {
+            document.getElementById('menuResume').style.display = 'none';
+            document.getElementById('menuVacancies').style.display = 'none';
+            var _nrb2 = document.getElementById('navResumeBtn'); if (_nrb2) _nrb2.style.display = 'none';
+            var adminLink = document.createElement('a');
+            adminLink.href = 'admin.html';
+            adminLink.className = 'menu-item';
+            adminLink.innerHTML = '<i class="fas fa-shield-alt"></i> Админ-панель';
+            adminLink.style.color = '#8e44ad';
+            adminLink.style.fontWeight = '600';
+            document.querySelector('.sidebar-menu').insertBefore(adminLink, document.querySelector('.sidebar-menu .menu-item[data-section="settings"]'));
         } else {
             document.getElementById('menuVacancies').style.display = 'none';
             loadCandidateProfile(token);
@@ -585,6 +623,10 @@ function loadResumes() {
         container.innerHTML = resumes.map(function(r) {
             var statusClass = r.status === 'published' ? 'active' : 'draft';
             var statusText = r.status === 'published' ? 'Опубликовано' : 'Черновик';
+            var modBadge = '';
+            if (r.moderation_status === 'rejected_needs_fix') {
+                modBadge = ' <span class="app-badge rejected" style="margin-left:6px;">На доработке</span>';
+            }
             return '<div class="resume-card" onclick="openResumeEditor(' + r.id + ')">' +
                 '<div class="resume-card-body">' +
                     '<div class="resume-card-title">' + escapeHtml(r.title || 'Без названия') + '</div>' +
@@ -597,6 +639,7 @@ function loadResumes() {
                 '</div>' +
                 '<div class="resume-card-side">' +
                     '<span class="app-badge ' + statusClass + '">' + statusText + '</span>' +
+                    modBadge +
                 '</div>' +
             '</div>';
         }).join('');
@@ -780,18 +823,34 @@ function loadMyVacancies(token) {
         }
         container.innerHTML = vacancies.map(function(v) {
             var isDraft = v.status === 'draft';
+            var isRejected = v.moderation_status === 'rejected_needs_fix';
+            var isPending = v.moderation_status === 'pending';
             var badgeClass = isDraft ? 'draft' : 'active';
             var badgeText = isDraft ? 'Черновик' : 'Опубликована';
+            var modBadge = '';
+            if (isRejected) {
+                modBadge = '<span class="app-badge rejected">Требует доработки</span>';
+            } else if (isPending) {
+                modBadge = '<span class="app-badge reviewed">На проверке</span>';
+            }
             var statusBtn = isDraft
                 ? '<button class="btn btn-sm btn-publish" onclick="publishVacancy(' + v.id + ')"><i class="fas fa-paper-plane"></i> Опубликовать</button>'
                 : '<button class="btn btn-sm btn-unpublish" onclick="unpublishVacancy(' + v.id + ')"><i class="fas fa-eye-slash"></i> Снять</button>';
+            var statusBanner = '';
+            if (isRejected) {
+                statusBanner = '<div class="app-card-meta" style="color:#c0392b; margin-top:4px;"><i class="fas fa-exclamation-triangle"></i> Вакансия заблокирована модератором и требует доработки. Отредактируйте и опубликуйте повторно.</div>';
+            } else if (isPending) {
+                statusBanner = '<div class="app-card-meta" style="color:#f57f17; margin-top:4px;"><i class="fas fa-clock"></i> Вакансия отправлена на повторную проверку модератору.</div>';
+            }
             return '<div class="app-card">' +
                 '<div>' +
                     '<div class="app-card-title">' + escapeHtml(v.title) + '</div>' +
                     '<div class="app-card-meta">' + escapeHtml(v.city || 'Брянск') + ' • ' + escapeHtml(v.salary || 'Зарплата не указана') + (v.employment_type ? ' • ' + escapeHtml(v.employment_type) : '') + '</div>' +
+                    statusBanner +
                 '</div>' +
                 '<div class="app-card-actions">' +
                     '<span class="app-badge ' + badgeClass + '">' + badgeText + '</span>' +
+                    modBadge +
                     statusBtn +
                     '<button class="btn btn-sm" onclick="openVacancyEditor(' + v.id + ')"><i class="fas fa-edit"></i></button>' +
                     '<button class="btn btn-sm btn-delete" onclick="deleteVacancy(' + v.id + ')"><i class="fas fa-trash"></i></button>' +
@@ -920,8 +979,136 @@ function deleteVacancy(vacancyId) {
     .catch(function(err) { alert('Ошибка сети: ' + (err.message || err)); });
 }
 
+(function() {
+    var resizer = document.getElementById('msgResizer');
+    var sidebar = document.getElementById('msgSidebar');
+    var messenger = document.querySelector('.messenger');
+    if (!resizer || !sidebar || !messenger) return;
+
+    var MIN = 200, MAX = 500;
+    var dragging = false;
+
+    resizer.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        dragging = true;
+        resizer.classList.add('active');
+        messenger.classList.add('resizing');
+        document.body.style.cursor = 'col-resize';
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!dragging) return;
+        e.preventDefault();
+        var rect = messenger.getBoundingClientRect();
+        var x = e.clientX - rect.left;
+        var w = Math.min(MAX, Math.max(MIN, x));
+        sidebar.style.width = w + 'px';
+        sidebar.style.flexBasis = w + 'px';
+    });
+
+    document.addEventListener('mouseup', function() {
+        if (!dragging) return;
+        dragging = false;
+        resizer.classList.remove('active');
+        messenger.classList.remove('resizing');
+        document.body.style.cursor = '';
+    });
+})();
+
 var currentChatId = null;
+var currentChatOtherUserId = null;
 var chatPollTimer = null;
+var lastMessageCount = 0;
+
+var PRESENCE = (function() {
+    var onlineSet = {};
+    var hbTimer = null;
+    var pollTimer = null;
+
+    function token() { return localStorage.getItem('jobflow_token'); }
+
+    function heartbeat() {
+        var t = token();
+        if (!t) return;
+        fetch('/api/presence/heartbeat', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + t }
+        }).catch(function() {});
+    }
+
+    function refresh() {
+        var t = token();
+        if (!t) return;
+        fetch('/api/presence/online', { headers: { 'Authorization': 'Bearer ' + t } })
+            .then(function(res) { return res.ok ? res.json() : { online: [] }; })
+            .then(function(data) {
+                var next = {};
+                (data && data.online ? data.online : []).forEach(function(id) { next[id] = true; });
+                onlineSet = next;
+                if (typeof window.onPresenceUpdate === 'function') window.onPresenceUpdate();
+            })
+            .catch(function() {});
+    }
+
+    function isOnline(userId) {
+        return !!userId && !!onlineSet[userId];
+    }
+
+    function handleWsEvent(data) {
+        if (!data) return;
+        if (data.type === 'presence_init' && data.online) {
+            data.online.forEach(function(id) { onlineSet[id] = true; });
+        } else if (data.type === 'user_online' && data.user_id) {
+            onlineSet[data.user_id] = true;
+        } else if (data.type === 'user_offline' && data.user_id) {
+            delete onlineSet[data.user_id];
+        }
+        if (typeof window.onPresenceUpdate === 'function') window.onPresenceUpdate();
+    }
+
+    function start() {
+        heartbeat();
+        refresh();
+        hbTimer = setInterval(heartbeat, 30000);
+        pollTimer = setInterval(refresh, 20000);
+        document.addEventListener('visibilitychange', function() { if (!document.hidden) refresh(); });
+    }
+
+    return { start: start, isOnline: isOnline, refresh: refresh, handleWsEvent: handleWsEvent };
+})();
+
+function updateChatHeaderPresence() {
+    var dot = document.querySelector('#chatAvatarWrap .online-dot');
+    if (dot) {
+        var avatarOnline = currentChatOtherUserId && PRESENCE.isOnline(currentChatOtherUserId);
+        dot.classList.toggle('active', !!avatarOnline);
+    }
+    var container = document.getElementById('partnerStatusContainer');
+    var text = document.getElementById('partnerStatusText');
+    if (!container || !text) return;
+    var online = currentChatOtherUserId && PRESENCE.isOnline(currentChatOtherUserId);
+    container.classList.toggle('is-online', !!online);
+    text.textContent = online ? 'в сети' : 'офлайн';
+}
+
+function refreshPresenceDots() {
+    document.querySelectorAll('.msg-contact-item').forEach(function(item) {
+        var dot = item.querySelector('.online-dot');
+        if (!dot) return;
+        var uid = item.getAttribute('data-user-id');
+        dot.classList.toggle('active', !!uid && PRESENCE.isOnline(parseInt(uid, 10)));
+    });
+    updateChatHeaderPresence();
+}
+
+window.onPresenceUpdate = function() {
+    refreshPresenceDots();
+};
+
+window.onPresenceWsEvent = function(data) {
+    if (!data) return;
+    PRESENCE.handleWsEvent(data);
+};
 
 function loadChats() {
     var token = localStorage.getItem('jobflow_token');
@@ -933,12 +1120,20 @@ function loadChats() {
         var container = document.getElementById('chatList');
         if (!chats || chats.length === 0) {
             container.innerHTML = '<div class="msg-empty-sidebar"><i class="far fa-comment-dots"></i><p>Нет активных чатов</p></div>';
+            if (window._pendingOpenChatId) {
+                openChatById(window._pendingOpenChatId);
+                window._pendingOpenChatId = null;
+            }
             return;
         }
         container.innerHTML = chats.map(function(c) {
-            var timeStr = formatTime(c.created_at);
-            return '<div class="msg-contact-item' + (currentChatId === c.id ? ' active' : '') + '" onclick="openChat(' + c.id + ',\'' + escapeHtml(c.other_user_email || '—') + '\',\'' + escapeHtml(c.vacancy_title || '') + '\')">' +
-                '<div class="msg-contact-avatar-sm"><i class="fas fa-user"></i></div>' +
+            var timeStr = formatTime(c.last_message_time || c.created_at);
+            var online = c.other_user_id && PRESENCE.isOnline(c.other_user_id);
+            return '<div class="msg-contact-item' + (currentChatId === c.id ? ' active' : '') + '" data-user-id="' + (c.other_user_id || '') + '" onclick="openChat(' + c.id + ',\'' + escapeHtml(c.other_user_email || '—') + '\',\'' + escapeHtml(c.vacancy_title || '') + '\',\'' + escapeHtml(c.application_status || '') + '\',' + (c.other_user_id || 0) + ')">' +
+                '<div class="avatar-container">' +
+                    '<div class="msg-contact-avatar-sm"><i class="fas fa-user"></i></div>' +
+                    '<span class="online-dot' + (online ? ' active' : '') + '"></span>' +
+                '</div>' +
                 '<div class="msg-contact-body">' +
                     '<div class="msg-contact-name-sm">' + escapeHtml(c.other_user_email || '—') + '</div>' +
                     '<div class="msg-contact-vacancy-sm">' + escapeHtml(c.vacancy_title || 'Вакансия') + '</div>' +
@@ -947,11 +1142,49 @@ function loadChats() {
                 '<span class="msg-contact-time">' + timeStr + '</span>' +
             '</div>';
         }).join('');
+        refreshPresenceDots();
+        if (window._pendingOpenChatId) {
+            var targetChat = chats.filter(function(c) { return c.id === window._pendingOpenChatId; })[0];
+            if (targetChat) {
+                openChat(targetChat.id, targetChat.other_user_email || '—', targetChat.vacancy_title || '', targetChat.application_status || '', targetChat.other_user_id || 0);
+            } else {
+                openChatById(window._pendingOpenChatId);
+            }
+            window._pendingOpenChatId = null;
+        }
     });
 }
 
-function openChat(chatId, otherName, vacancyTitle) {
+function openChatById(chatId) {
+    var token = localStorage.getItem('jobflow_token');
+    fetch('/api/chat/' + chatId + '/messages', {
+        headers: {'Authorization': 'Bearer ' + token}
+    })
+    .then(function(res) {
+        if (!res.ok) throw new Error('not found');
+        return res.json();
+    })
+    .then(function(messages) {
+        if (!messages || !messages.length) return;
+        var otherEmail = '—';
+        var otherUserId = 0;
+        var appStatus = '';
+        for (var i = 0; i < messages.length; i++) {
+            if (messages[i].sender_id !== currentUser.id && messages[i].sender_email) {
+                otherEmail = messages[i].sender_email;
+                otherUserId = messages[i].sender_id;
+                break;
+            }
+        }
+        openChat(chatId, otherEmail, '', appStatus, otherUserId);
+    })
+    .catch(function() {});
+}
+
+function openChat(chatId, otherName, vacancyTitle, appStatus, otherUserId) {
     currentChatId = chatId;
+    currentChatOtherUserId = otherUserId || null;
+    lastMessageCount = 0;
     document.getElementById('msgEmptyMain').style.display = 'none';
     document.getElementById('msgConversation').style.display = 'flex';
     document.getElementById('chatTitle').textContent = otherName || '—';
@@ -963,6 +1196,8 @@ function openChat(chatId, otherName, vacancyTitle) {
             el.classList.add('active');
         }
     });
+    setChatBlocked(appStatus);
+    updateChatHeaderPresence();
     loadChatMessages(chatId);
     if (chatPollTimer) clearInterval(chatPollTimer);
     chatPollTimer = setInterval(function() {
@@ -970,11 +1205,77 @@ function openChat(chatId, otherName, vacancyTitle) {
     }, 3000);
 }
 
+function setChatBlocked(appStatus) {
+    var form = document.getElementById('chatForm');
+    var banner = document.getElementById('chatBlockedBanner');
+    var input = document.getElementById('chatInput');
+    var sendBtn = form ? form.querySelector('.msg-send-btn') : null;
+    var attachBtn = form ? form.querySelector('.msg-attach-btn') : null;
+    if (!form || !banner) return;
+    var blocked = (appStatus === 'rejected');
+    if (blocked) {
+        if (input) input.disabled = true;
+        if (sendBtn) sendBtn.disabled = true;
+        if (attachBtn) attachBtn.disabled = true;
+        var isCandidate = currentUser && currentUser.role === 'candidate';
+        var text = isCandidate
+            ? 'Работодатель отклонил ваш отклик. Отправка сообщений заблокирована'
+            : 'Отклик отклонён. Отправка сообщений недоступна';
+        banner.innerHTML = '<i class="fas fa-ban"></i> ' + escapeHtml(text);
+        banner.style.display = 'flex';
+        form.style.display = 'none';
+    } else {
+        if (input) input.disabled = false;
+        if (sendBtn) sendBtn.disabled = false;
+        if (attachBtn) attachBtn.disabled = false;
+        banner.style.display = 'none';
+        banner.innerHTML = '';
+        form.style.display = '';
+    }
+}
+
 function backToChats() {
     currentChatId = null;
     if (chatPollTimer) clearInterval(chatPollTimer);
+    setChatBlocked(null);
     document.getElementById('msgConversation').style.display = 'none';
     document.getElementById('msgEmptyMain').style.display = '';
+}
+
+function updateChatListItem(chatId, messageText, messageTime) {
+    var list = document.getElementById('chatList');
+    var items = list.querySelectorAll('.msg-contact-item');
+    var target = null;
+    for (var i = 0; i < items.length; i++) {
+        var onclick = items[i].getAttribute('onclick') || '';
+        if (onclick.indexOf('openChat(' + chatId + ',') > -1 || onclick.indexOf('openChat(' + chatId + ' ,') > -1) {
+            target = items[i];
+            break;
+        }
+    }
+    if (!target) {
+        loadChats();
+        return;
+    }
+    var preview = target.querySelector('.msg-contact-preview');
+    if (preview) {
+        preview.textContent = messageText.length > 80 ? messageText.substring(0, 80) : messageText;
+    } else if (messageText) {
+        var body = target.querySelector('.msg-contact-body');
+        if (body) {
+            var p = document.createElement('div');
+            p.className = 'msg-contact-preview';
+            p.textContent = messageText.length > 80 ? messageText.substring(0, 80) : messageText;
+            body.appendChild(p);
+        }
+    }
+    var timeEl = target.querySelector('.msg-contact-time');
+    if (timeEl) {
+        timeEl.textContent = formatTime(messageTime);
+    }
+    if (target !== list.firstElementChild) {
+        list.insertBefore(target, list.firstElementChild);
+    }
 }
 
 function loadChatMessages(chatId) {
@@ -987,8 +1288,14 @@ function loadChatMessages(chatId) {
         var container = document.getElementById('chatMessages');
         if (!messages || messages.length === 0) {
             container.innerHTML = '<div class="msg-date-sep"><span>Начало диалога</span></div>';
+            lastMessageCount = 0;
             return;
         }
+        if (messages.length > lastMessageCount && lastMessageCount > 0) {
+            var lastMsg = messages[messages.length - 1];
+            updateChatListItem(chatId, lastMsg.text, lastMsg.created_at);
+        }
+        lastMessageCount = messages.length;
         var html = '';
         var lastDate = '';
         messages.forEach(function(m) {
@@ -1029,8 +1336,11 @@ document.getElementById('chatForm').addEventListener('submit', function(e) {
         if (data.id) {
             document.getElementById('chatInput').value = '';
             loadChatMessages(currentChatId);
-            loadChats();
+            updateChatListItem(currentChatId, text, data.created_at);
         } else {
+            if (data.detail && data.detail.toLowerCase().indexOf('блокир') > -1) {
+                setChatBlocked('rejected');
+            }
             alert(data.detail || 'Ошибка отправки');
         }
     })
@@ -1040,10 +1350,23 @@ document.getElementById('chatForm').addEventListener('submit', function(e) {
 function formatTime(dateStr) {
     if (!dateStr) return '';
     var d = new Date(dateStr);
-    return d.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
+    d = new Date(d.getTime() + 3 * 60 * 60 * 1000);
+    var now = new Date();
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var yesterday = new Date(today.getTime() - 86400000);
+    var msgDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    if (msgDay.getTime() === today.getTime()) {
+        return d.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
+    } else if (msgDay.getTime() === yesterday.getTime()) {
+        return 'Вчера';
+    } else {
+        var months = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+        return d.getDate() + ' ' + months[d.getMonth()];
+    }
 }
 
 function loadMyApplications(token) {
+    if (!token || !currentUser) return;
     if (currentUser.role === 'employer') {
         loadEmployerApplications(token);
         return;
@@ -1059,18 +1382,35 @@ function loadMyApplications(token) {
             return;
         }
         container.innerHTML = apps.map(function(a) {
-            var statusClass = a.status === 'accepted' ? 'accepted' : a.status === 'rejected' ? 'rejected' : 'active';
-            var statusText = a.status === 'accepted' ? 'Принято' : a.status === 'rejected' ? 'Отклонено' : 'На рассмотрении';
-            return '<div class="app-card">' +
-                '<div>' +
-                    '<div class="app-card-title">Вакансия #' + a.vacancy_id + '</div>' +
-                    '<span class="app-badge ' + statusClass + '">' + statusText + '</span>' +
+            var statusClass = a.status === 'accepted' ? 'accepted' : a.status === 'rejected' ? 'rejected' : a.status === 'reviewed' ? 'reviewed' : 'active';
+            var statusText = a.status === 'accepted' ? 'Принят' : a.status === 'rejected' ? 'Не принят' : a.status === 'reviewed' ? 'Просмотрен' : 'На рассмотрении';
+            var meta = [];
+            if (a.company_name) meta.push(escapeHtml(a.company_name));
+            if (a.salary) meta.push('<i class="fas fa-ruble-sign"></i> ' + escapeHtml(a.salary));
+            if (a.work_format) meta.push('<i class="fas fa-laptop-house"></i> ' + escapeHtml(a.work_format));
+            if (a.employment_type) meta.push('<i class="fas fa-clock"></i> ' + escapeHtml(a.employment_type));
+            if (a.vacancy_city) meta.push('<i class="fas fa-map-marker-alt"></i> ' + escapeHtml(a.vacancy_city));
+            var metaHtml = meta.length ? meta.join('&nbsp;&nbsp;•&nbsp;&nbsp;') : '—';
+            var descHtml = a.description ? '<div class="app-card-desc">' + escapeHtml(a.description) + '</div>' : '';
+            var chatBtnHtml = a.chat_id
+                ? '<button class="btn btn-sm" onclick="switchSection(\'chat\'); setTimeout(function(){ openChatById(' + a.chat_id + '); }, 500);"><i class="fas fa-comments"></i> Чат</button>'
+                : '<button class="btn btn-sm" onclick="openChatFromApplication(' + a.id + ')"><i class="fas fa-comments"></i> Чат</button>';
+            return '<div class="app-card app-card-employer">' +
+                '<div class="app-card-main">' +
+                    '<div class="app-card-title">' + escapeHtml(a.vacancy_title || ('Вакансия #' + a.vacancy_id)) + '</div>' +
+                    '<div class="app-card-meta">' + metaHtml + '</div>' +
+                    descHtml +
                 '</div>' +
-                '<button class="btn btn-sm" onclick="openChatFromApplication(' + a.id + ')"><i class="fas fa-comments"></i> Чат</button>' +
+                '<div class="app-card-actions">' +
+                    '<span class="app-badge ' + statusClass + '">' + statusText + '</span>' +
+                    chatBtnHtml +
+                '</div>' +
             '</div>';
         }).join('');
     });
 }
+
+var employerAppsById = {};
 
 function loadEmployerApplications(token) {
     fetch('/api/vacancies/employer/applications', {
@@ -1079,34 +1419,129 @@ function loadEmployerApplications(token) {
     .then(function(res) { return res.json(); })
     .then(function(apps) {
         var container = document.getElementById('myApplicationsList');
+        employerAppsById = {};
+        if (apps && apps.length) {
+            apps.forEach(function(a) { employerAppsById[a.id] = a; });
+        }
         if (!apps || apps.length === 0) {
             container.innerHTML = '<div class="empty-state"><i class="fas fa-paper-plane"></i><p>На ваши вакансии пока нет откликов</p></div>';
             return;
         }
         container.innerHTML = apps.map(function(a) {
             var statusClass = a.status === 'accepted' ? 'accepted' : a.status === 'rejected' ? 'rejected' : 'active';
-            var statusText = a.status === 'accepted' ? 'Принято' : a.status === 'rejected' ? 'Отклонено' : 'Новый';
+            var statusText = a.status === 'accepted' ? 'Принят' : a.status === 'rejected' ? 'Отклонён' : a.status === 'reviewed' ? 'Просмотрен' : 'Новый';
             var nameText = a.candidate_name || ('Кандидат #' + a.candidate_id);
-            var skillsText = a.candidate_skills ? ' • ' + escapeHtml(a.candidate_skills).substring(0, 60) : '';
-            var cityText = a.candidate_city ? ' • ' + escapeHtml(a.candidate_city) : '';
-            return '<div class="app-card app-card-employer">' +
+            var positionText = a.candidate_position ? escapeHtml(a.candidate_position) : 'Позиция не указана';
+            var contacts = [];
+            if (a.candidate_phone) contacts.push('<i class="fas fa-phone"></i> ' + escapeHtml(a.candidate_phone));
+            if (a.candidate_email) contacts.push('<i class="fas fa-envelope"></i> ' + escapeHtml(a.candidate_email));
+            var contactsHtml = contacts.length ? contacts.join('&nbsp;&nbsp;') : 'Контакты не указаны';
+            var statusButtons =
+                '<button class="btn btn-sm btn-accept" onclick="setApplicationStatus(' + a.id + ', \'accepted\')"' + (a.status === 'accepted' ? ' disabled' : '') + '><i class="fas fa-check"></i> Принять</button>' +
+                '<button class="btn btn-sm btn-reject" onclick="setApplicationStatus(' + a.id + ', \'rejected\')"' + (a.status === 'rejected' ? ' disabled' : '') + '><i class="fas fa-times"></i> Отклонить</button>';
+            return '<div class="app-card app-card-employer app-card-clickable" onclick="openCandidateChat(' + a.id + ',' + (a.candidate_user_id || 0) + ')">' +
                 '<div class="app-card-main">' +
-                    '<div class="app-card-title">' + escapeHtml(a.vacancy_title || ('Вакансия #' + a.vacancy_id)) + '</div>' +
-                    '<div class="app-card-candidate">' +
-                        '<i class="fas fa-user"></i> ' + escapeHtml(nameText) + cityText + skillsText +
-                    '</div>' +
+                    '<div class="app-card-title">' + escapeHtml(nameText) + '</div>' +
+                    '<div class="app-card-candidate"><i class="fas fa-briefcase"></i> ' + positionText + ' &nbsp;•&nbsp; <i class="fas fa-list"></i> ' + escapeHtml(a.vacancy_title || ('Вакансия #' + a.vacancy_id)) + '</div>' +
+                    '<div class="app-card-candidate">' + contactsHtml + '</div>' +
                     '<span class="app-badge ' + statusClass + '">' + statusText + '</span>' +
                 '</div>' +
-                '<div class="app-card-actions">' +
-                    '<button class="btn btn-sm" onclick="showCandidateResume(' + a.candidate_id + ')"><i class="fas fa-file-alt"></i> Резюме</button>' +
-                    '<button class="btn btn-sm" onclick="openChatFromApplication(' + a.id + ')"><i class="fas fa-comments"></i> Чат</button>' +
+                '<div class="app-card-actions" onclick="event.stopPropagation()">' +
+                    statusButtons +
+                    '<button class="btn btn-sm" type="button" onclick="event.stopPropagation(); openResumeModal(' + a.id + ')"><i class="fas fa-file-alt"></i> Резюме</button>' +
+                    '<button class="btn btn-sm" onclick="openCandidateChat(' + a.id + ',' + (a.candidate_user_id || 0) + ')"><i class="fas fa-comments"></i> Чат</button>' +
                 '</div>' +
             '</div>';
         }).join('');
     });
 }
 
+function openCandidateChat(applicationId, candidateUserId) {
+    var token = localStorage.getItem('jobflow_token');
+    if (!token) { window.location.href = 'login.html'; return; }
+    fetch('/api/chat/application/' + applicationId, {
+        method: 'POST',
+        headers: {'Authorization': 'Bearer ' + token}
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (data.id) {
+            switchSection('chat');
+            openChat(data.id, data.other_user_email || '—', data.vacancy_title || '', data.application_status || '', data.other_user_id || 0);
+        } else if (chatPageAvailable()) {
+            window.location.href = 'chat.html?userId=' + encodeURIComponent(candidateUserId) + '&applicationId=' + applicationId;
+        } else {
+            alert(data.detail || 'Не удалось открыть чат');
+        }
+    })
+    .catch(function() {
+        if (chatPageAvailable()) {
+            window.location.href = 'chat.html?userId=' + encodeURIComponent(candidateUserId) + '&applicationId=' + applicationId;
+        }
+    });
+}
+
+function chatPageAvailable() {
+    return false;
+}
+
+function setApplicationStatus(applicationId, newStatus) {
+    var token = localStorage.getItem('jobflow_token');
+    if (!token) { window.location.href = 'login.html'; return; }
+    fetch('/api/vacancies/applications/' + applicationId + '/status?new_status=' + encodeURIComponent(newStatus), {
+        method: 'PUT',
+        headers: {'Authorization': 'Bearer ' + token}
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (data.detail === 'ok') {
+            loadEmployerApplications(token);
+            loadChats();
+            if (currentChatId) {
+                fetch('/api/chat/application/' + applicationId, {
+                    method: 'POST',
+                    headers: {'Authorization': 'Bearer ' + token}
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(chatData) {
+                    if (chatData.application_status) {
+                        setChatBlocked(chatData.application_status);
+                    }
+                })
+                .catch(function() {});
+            }
+        } else {
+            alert(data.detail || 'Ошибка');
+        }
+    })
+    .catch(function(err) { alert('Ошибка: ' + (err.message || err)); });
+}
+
 function showCandidateResume(candidateId) {
+    openResumeModalByCandidate(candidateId);
+}
+
+var resumeModalAppCtx = null;
+
+function openResumeModal(applicationId) {
+    var app = employerAppsById[applicationId] || {};
+    var candidateId = app.candidate_id || applicationId;
+    resumeModalAppCtx = app;
+    var body = document.getElementById('resumeDocBody');
+    body.innerHTML = '<div class="resume-loading"><i class="fas fa-spinner fa-spin"></i><span>Загрузка резюме…</span></div>';
+    openResumeModalWindow();
+    fetchResumesForModal(candidateId);
+}
+
+function openResumeModalByCandidate(candidateId) {
+    resumeModalAppCtx = null;
+    var body = document.getElementById('resumeDocBody');
+    body.innerHTML = '<div class="resume-loading"><i class="fas fa-spinner fa-spin"></i><span>Загрузка резюме…</span></div>';
+    openResumeModalWindow();
+    fetchResumesForModal(candidateId);
+}
+
+function fetchResumesForModal(candidateId) {
     var token = localStorage.getItem('jobflow_token');
     fetch('/api/resumes/candidate/' + candidateId, {
         headers: {'Authorization': 'Bearer ' + token}
@@ -1114,23 +1549,110 @@ function showCandidateResume(candidateId) {
     .then(function(res) { return res.json(); })
     .then(function(resumes) {
         if (!resumes || resumes.length === 0) {
-            alert('У кандидата нет опубликованных резюме');
+            renderResumeEmpty('У кандидата пока нет резюме');
             return;
         }
-        var r = resumes[0];
-        var info = 'Название: ' + (r.title || '—') + '\n';
-        info += 'Должность: ' + (r.position || '—') + '\n';
-        info += 'Город: ' + (r.city || '—') + '\n';
-        info += 'Зарплата: ' + (r.salary || '—') + '\n';
-        info += 'Занятость: ' + (r.employment || '—') + '\n';
-        info += 'Образование: ' + (r.education || '—') + '\n';
-        info += 'Навыки: ' + (r.skills || '—') + '\n';
-        info += 'Опыт: ' + (r.about || r.experience || '—') + '\n';
-        info += 'Языки: ' + (r.languages || '—');
-        alert(info);
+        var published = resumes.filter(function(r) { return r.status === 'published'; });
+        var r = (published.length ? published : resumes)[0];
+        renderResumeCard(r, resumeModalAppCtx || {});
     })
-    .catch(function() { alert('Ошибка загрузки резюме'); });
+    .catch(function() { renderResumeEmpty('Ошибка загрузки резюме'); });
 }
+
+function renderResumeEmpty(msg) {
+    document.getElementById('resumeDocBody').innerHTML =
+        '<div class="resume-empty"><i class="far fa-file-alt"></i><p>' + escapeHtml(msg) + '</p></div>';
+}
+
+function renderResumeCard(r, app) {
+    var name = (app.candidate_name || r.title || 'Кандидат').trim();
+    var initials = getInitials(name);
+    var position = r.position || app.candidate_position || 'Желаемая должность не указана';
+    var city = r.city || app.candidate_city;
+    var salary = r.salary;
+    var employment = r.employment;
+    var statusText = r.status === 'published' ? 'Активно ищет работу' : 'Резюме в черновике';
+    var statusClass = r.status === 'published' ? 'is-active' : 'is-draft';
+
+    var contacts = [];
+    if (city) contacts.push(lineItem('map-marker-alt', 'Город', city));
+    if (app.candidate_phone) contacts.push(lineItem('phone', 'Телефон', app.candidate_phone));
+    if (app.candidate_email) contacts.push(lineItem('envelope', 'Email', app.candidate_email));
+
+    var tags = [];
+    if (salary) tags.push('<span class="resume-tag"><i class="fas fa-ruble-sign"></i> ' + escapeHtml(salary) + '</span>');
+    if (employment) tags.push('<span class="resume-tag"><i class="fas fa-clock"></i> ' + escapeHtml(employment) + '</span>');
+    if (r.languages) tags.push('<span class="resume-tag"><i class="fas fa-language"></i> ' + escapeHtml(r.languages) + '</span>');
+    if (r.driving) tags.push('<span class="resume-tag"><i class="fas fa-car"></i> ' + escapeHtml(r.driving) + '</span>');
+
+    var skillsHtml = r.skills
+        ? '<div class="resume-skills">' + r.skills.split(',').map(function(s) {
+            return '<span class="skill-chip">' + escapeHtml(s.trim()) + '</span>';
+        }).filter(function(s){ return s; }).join('') + '</div>'
+        : '<p class="resume-muted">Не указаны</p>';
+
+    var html =
+        '<div class="resume-head">' +
+            '<div class="resume-avatar">' + escapeHtml(initials) + '</div>' +
+            '<div class="resume-head-info">' +
+                '<div class="resume-name">' + escapeHtml(name) + '</div>' +
+                '<div class="resume-position">' + escapeHtml(position) + '</div>' +
+                '<span class="resume-status ' + statusClass + '"><i class="fas fa-circle"></i> ' + escapeHtml(statusText) + '</span>' +
+            '</div>' +
+        '</div>' +
+        (tags.length ? '<div class="resume-tags">' + tags.join('') + '</div>' : '') +
+        (contacts.length ? '<div class="resume-contacts">' + contacts.join('') + '</div>' : '') +
+        sectionBlock('briefcase', 'Опыт работы', (r.experience || r.about)) +
+        sectionBlock('graduation-cap', 'Образование', r.education) +
+        '<div class="resume-section">' +
+            '<div class="resume-section-title"><i class="fas fa-tools"></i> Ключевые навыки</div>' +
+            skillsHtml +
+        '</div>' +
+        sectionBlock('user', 'О себе', r.about);
+
+    document.getElementById('resumeDocBody').innerHTML = html;
+}
+
+function sectionBlock(icon, title, content) {
+    return '<div class="resume-section">' +
+        '<div class="resume-section-title"><i class="fas fa-' + icon + '"></i> ' + title + '</div>' +
+        (content ? '<p class="resume-text">' + escapeHtml(content) + '</p>' : '<p class="resume-muted">Не указано</p>') +
+    '</div>';
+}
+
+function lineItem(icon, label, value) {
+    return '<div class="resume-contact">' +
+        '<i class="fas fa-' + icon + '"></i>' +
+        '<div><span class="resume-contact-label">' + label + '</span><span class="resume-contact-value">' + escapeHtml(value) + '</span></div>' +
+    '</div>';
+}
+
+function getInitials(name) {
+    var parts = (name || '').trim().split(/\s+/).filter(function(p) { return p; });
+    if (!parts.length) return '?';
+    var ini = (parts[0][0] || '').toUpperCase();
+    if (parts[1]) ini += (parts[1][0] || '').toUpperCase();
+    return ini;
+}
+
+function openResumeModalWindow() {
+    var modal = document.getElementById('resumeModal');
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeResumeModal() {
+    var modal = document.getElementById('resumeModal');
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        var modal = document.getElementById('resumeModal');
+        if (modal && modal.classList.contains('open')) closeResumeModal();
+    }
+});
 
 function openChatFromApplication(applicationId) {
     var token = localStorage.getItem('jobflow_token');
@@ -1142,7 +1664,7 @@ function openChatFromApplication(applicationId) {
     .then(function(data) {
         if (data.id) {
             switchSection('chat');
-            openChat(data.id, data.other_user_email || '—', data.vacancy_title || '');
+            openChat(data.id, data.other_user_email || '—', data.vacancy_title || '', data.application_status || '', data.other_user_id || 0);
         } else {
             alert(data.detail || 'Ошибка');
         }
@@ -1261,7 +1783,8 @@ document.getElementById('settingsForm').addEventListener('submit', function(e) {
         document.getElementById('setCurrentPassword').value = '';
         document.getElementById('setNewPassword').value = '';
         document.getElementById('setNewPasswordConfirm').value = '';
-        loadProfile();
+loadProfile();
+PRESENCE.start();
     })
     .catch(function(err) { alert(err.message || 'Ошибка сохранения'); });
 });
@@ -1288,13 +1811,24 @@ function escapeHtml(str) {
 loadProfile();
 
 (function() {
-    var hash = window.location.hash;
-    if (hash === '#chat') {
+    var params = new URLSearchParams(window.location.search);
+    var openChatId = params.get('open_chat_id');
+    var hash = window.location.hash.replace('#', '');
+
+    if (openChatId) {
+        window._pendingOpenChatId = parseInt(openChatId, 10);
+    }
+
+    if (hash === 'chat' || openChatId) {
         setTimeout(function() { switchSection('chat'); }, 300);
+    } else if (hash === 'applications') {
+        setTimeout(function() { switchSection('applications'); }, 300);
     }
 })();
 </script>
-<script src="city-loader.js"></script>
+<script src="js/city-loader.js"></script>
+<script src="js/nav-auth.js"></script>
+<script src="js/notifications.js"></script>
 
 </body>
 </html>

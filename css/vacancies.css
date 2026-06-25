@@ -16,7 +16,7 @@ body::before {
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background-image: url('https://www.bing.com/th/id/OIP.7e00VpnTqhAP47U3U6Wq_wHaNK?w=193&h=333&c=8&rs=1&qlt=90&o=6&pid=3.1&rm=2');
+    background-image: url('https://imageio.forbes.com/specials-images/imageserve/867416784/0x0.jpg?format=jpg&amp;height=600&amp;width=1200&amp;fit=bounds');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -72,10 +72,104 @@ body::after {
 
 .search-bar {
     background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(2px);
     border-radius: 2rem;
-    padding: 1.5rem 2rem;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 30px 50px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.2);
     margin-bottom: 2rem;
+    overflow: hidden;
+    animation: fadeUp 0.5s ease-out;
+}
+
+.search-bar .card-content { padding: 2.2rem 2rem 1.6rem; }
+
+.search-bar h1 {
+    font-size: 1.9rem;
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #0b2b3f 0%, #1f5e7e 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    margin-bottom: 1.4rem;
+}
+
+.search-toggle {
+    display: inline-flex;
+    background: #eef4f9;
+    border-radius: 2rem;
+    padding: 0.3rem;
+    margin-bottom: 1.4rem;
+    gap: 0.3rem;
+}
+
+.toggle-btn {
+    border: none;
+    background: transparent;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #4a6f8a;
+    padding: 0.55rem 1.3rem;
+    border-radius: 2rem;
+    cursor: pointer;
+    transition: all 0.25s;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+}
+
+.toggle-btn i { font-size: 0.82rem; }
+.toggle-btn:hover { color: #1f6392; }
+
+.toggle-btn.active {
+    background: #fff;
+    color: #0b2b3f;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-btn.active i { color: #2c7cb0; }
+
+.frequent-search {
+    margin-top: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+}
+
+.frequent-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1f4e6e;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.frequent-label i { color: #e8730c; font-size: 0.85rem; }
+
+.frequent-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+.frequent-tags .tag {
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #1f6392;
+    background: #e6f0f8;
+    padding: 0.4rem 0.9rem;
+    border-radius: 2rem;
+    transition: all 0.2s;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.frequent-tags .tag:hover { background: #cde4f2; color: #0e4a6e; transform: translateY(-1px); }
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .search-inputs {

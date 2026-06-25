@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <script src="js/auth-guard.js"></script>
     <title>JobFlow — База резюме</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="css\resumes-browse.css">
+    <link rel="stylesheet" href="css\notifications.css">
 </head>
 <body>
 
@@ -69,11 +71,13 @@
         </div>
         <div class="footer-col">
             <h4>Соискателям</h4>
-            <a href="#">Кандидаты по профессиям</a>
+            <a href="vacancies.html">Поиск работы</a>
             <a href="#">Безопасный JobFlow</a>
         </div>
         <div class="footer-col">
             <h4>Работодателям</h4>
+            <a href="sotrudnick.html">Поиск сотрудников</a>
+            <a href="resumes-browse.html">Кандидаты по профессиям</a>
             <a href="resumes-browse.html">Поиск по резюме</a>
             <a href="#">Этика и комплаенс</a>
         </div>
@@ -202,7 +206,8 @@ function escapeHtml(str) {
 
 if (initialSearch) searchResumes();
 </script>
-<script src="city-loader.js"></script>
-<script src="nav-auth.js"></script>
+<script src="js/city-loader.js"></script>
+<script src="js/nav-auth.js"></script>
+<script src="js/notifications.js"></script>
 </body>
 </html>

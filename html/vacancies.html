@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <script src="js/auth-guard.js"></script>
     <title>JobFlow — Вакансии</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="css\vacancies.css">
+    <link rel="stylesheet" href="css\notifications.css">
 </head>
 <body>
 
@@ -27,17 +29,41 @@
 </div>
 
 <div class="main-wrapper">
-    <div class="search-bar">
-        <div class="search-inputs">
-            <div class="search-field">
-                <i class="fas fa-search"></i>
-                <input type="text" id="searchQuery" placeholder="Должность или профессия" autocomplete="off">
+    <input type="hidden" id="setcompanysite" value="">
+    <div class="search-bar hero-card">
+        <div class="card-content">
+            <h1>Скажите, какие вакансии вы ищете</h1>
+
+            <div class="search-toggle" role="tablist">
+                <button type="button" class="toggle-btn active" data-mode="vacancies" role="tab">
+                    <i class="fas fa-briefcase"></i> По вакансиям
+                </button>
+                <button type="button" class="toggle-btn" data-mode="company" role="tab">
+                    <i class="fas fa-building"></i> По работодателю
+                </button>
             </div>
-            <div class="search-field city-field">
-                <i class="fas fa-map-marker-alt"></i>
-                <input type="text" id="cityInput" placeholder="Город" value="Брянск" autocomplete="off">
+
+            <div class="search-inputs">
+                <div class="search-field">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchQuery" placeholder="Должность или профессия" autocomplete="off">
+                </div>
+                <div class="search-field city-field">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <input type="text" id="cityInput" placeholder="Город" value="Брянск" autocomplete="off">
+                </div>
+                <button class="btn" id="searchBtn"><i class="fas fa-search"></i> Найти</button>
             </div>
-            <button class="btn" id="searchBtn"><i class="fas fa-search"></i> Найти</button>
+
+            <div class="frequent-search">
+                <span class="frequent-label"><i class="fas fa-fire"></i> Часто ищут:</span>
+                <div class="frequent-tags">
+                    <a href="#" class="tag" data-tag="Курьер">Курьер</a>
+                    <a href="#" class="tag" data-tag="Удалённо">Удалённо</a>
+                    <a href="#" class="tag" data-tag="IT">IT</a>
+                    <a href="#" class="tag" data-tag="Подработка">Подработка</a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -69,12 +95,14 @@
         </div>
         <div class="footer-col">
             <h4>Соискателям</h4>
-            <a href="#">Кандидаты по профессиям</a>
+            <a href="vacancies.html">Поиск работы</a>
             <a href="#">Безопасный JobFlow</a>
         </div>
         <div class="footer-col">
             <h4>Работодателям</h4>
-            <a href="#">Поиск по резюме</a>
+            <a href="sotrudnick.html">Поиск сотрудников</a>
+            <a href="resumes-browse.html">Кандидаты по профессиям</a>
+            <a href="resumes-browse.html">Поиск по резюме</a>
             <a href="#">Этика и комплаенс</a>
         </div>
         <div class="footer-col">
@@ -94,16 +122,22 @@
 <script>
 var urlParams = new URLSearchParams(window.location.search);
 var initialSearch = urlParams.get('search') || '';
-var initialCity = urlParams.get('city') || 'Брянск';
+var initialCompany = urlParams.get('company') || '';
+var initialCity = urlParams.get('city') || localStorage.getItem('jobflow_city') || 'Брянск';
+var currentMode = (urlParams.get('mode') === 'company' || initialCompany) ? 'company' : 'vacancies';
 
 if (initialSearch) document.getElementById('searchQuery').value = initialSearch;
+if (initialCompany) document.getElementById('searchQuery').value = initialCompany;
 if (initialCity) document.getElementById('cityInput').value = initialCity;
 
 function searchVacancies() {
     var search = document.getElementById('searchQuery').value.trim();
     var city = document.getElementById('cityInput').value.trim();
     var params = new URLSearchParams();
-    if (search) params.set('search', search);
+    if (search) {
+        if (currentMode === 'company') params.set('company', search);
+        else params.set('search', search);
+    }
     if (city) params.set('city', city);
     fetch('/api/vacancies/?' + params.toString())
     .then(function(res) { return res.json(); })
@@ -137,8 +171,11 @@ function showDetail(id) {
     .then(function(res) { return res.json(); })
     .then(function(v) {
         document.getElementById('detailTitle').innerHTML = '<i class="fas fa-briefcase"></i> ' + escapeHtml(v.title);
+        document.getElementById('setcompanysite').value = v.employer_website || '';
         var body = '';
         body += '<div class="detail-row"><i class="fas fa-building"></i> <strong>Компания:</strong> ' + escapeHtml(v.company_name || '—') + '</div>';
+        var companySite = document.getElementById('setcompanysite').value;
+        if (companySite) body += '<div class="detail-row"><i class="fas fa-globe"></i> <strong>Сайт компании:</strong> <a href="' + escapeHtml(companySite) + '" target="_blank" rel="noopener">' + escapeHtml(companySite) + '</a></div>';
         body += '<div class="detail-row"><i class="fas fa-map-marker-alt"></i> <strong>Город:</strong> ' + escapeHtml(v.city || '—') + '</div>';
         body += '<div class="detail-row"><i class="fas fa-money-bill-wave"></i> <strong>Зарплата:</strong> ' + escapeHtml(v.salary || 'Не указана') + '</div>';
         body += '<div class="detail-row"><i class="fas fa-graduation-cap"></i> <strong>Образование:</strong> ' + escapeHtml(v.education || 'Не указано') + '</div>';
@@ -181,7 +218,7 @@ function applyToVacancy(vacancyId) {
     .then(function(res) { return res.json(); })
     .then(function(data) {
         if (data.chat_id) {
-            window.location.href = 'account.html#chat';
+            window.location.href = 'account.html?open_chat_id=' + data.chat_id;
         } else {
             alert(data.detail || 'Ошибка отклика');
             if (btn) {
@@ -208,15 +245,48 @@ document.getElementById('vacancyDetailModal').addEventListener('click', function
     if (e.target === this) closeDetail();
 });
 
+// ── Search mode toggle: "По вакансиям" (by title) / "По работодателю" (by company_name) ──
+function setMode(mode) {
+    currentMode = mode;
+    var queryInput = document.getElementById('searchQuery');
+    queryInput.placeholder = (mode === 'company') ? 'Название компании' : 'Должность или профессия';
+    var btns = document.querySelectorAll('.toggle-btn');
+    for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.toggle('active', btns[i].getAttribute('data-mode') === mode);
+    }
+}
+setMode(currentMode);
+
+var toggleBtns = document.querySelectorAll('.toggle-btn');
+for (var t = 0; t < toggleBtns.length; t++) {
+    toggleBtns[t].addEventListener('click', function() {
+        var mode = this.getAttribute('data-mode');
+        if (mode === currentMode) return;
+        setMode(mode);
+        searchVacancies();
+    });
+}
+
+// ── Frequent search tags: fill query and run search ──
+var freqTags = document.querySelectorAll('.frequent-tags .tag');
+for (var f = 0; f < freqTags.length; f++) {
+    freqTags[f].addEventListener('click', function(e) {
+        e.preventDefault();
+        document.getElementById('searchQuery').value = this.getAttribute('data-tag');
+        searchVacancies();
+    });
+}
+
 function escapeHtml(str) {
     var div = document.createElement('div');
     div.textContent = str || '';
     return div.innerHTML;
 }
 
-if (initialSearch) searchVacancies();
+if (initialSearch || initialCompany) searchVacancies();
 </script>
-<script src="city-loader.js"></script>
-<script src="nav-auth.js"></script>
+<script src="js/city-loader.js"></script>
+<script src="js/nav-auth.js"></script>
+<script src="js/notifications.js"></script>
 </body>
 </html>

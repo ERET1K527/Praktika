@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.models import Chat, Message, Application, User, Vacancy, Employer, Candidate
+from app.models import Chat, Message, Application, User, Vacancy, Employer, Candidate, StatusEnum
 from app.repositories.repo import ApplicationRepo, VacancyRepo
 from app.schemas.chat import MessageCreate, MessageOut, ChatOut
 
@@ -96,6 +96,8 @@ def send_message(db: Session, chat_id: int, user_id: int, data: MessageCreate) -
         is_participant = True
     if not is_participant:
         raise ValueError("Нет доступа к этому чату")
+    if application.status == StatusEnum.rejected:
+        raise ValueError("Чат заблокирован: работодатель отклонил отклик. Отправка сообщений недоступна")
     message = Message(chat_id=chat_id, sender_id=user_id, text=data.text)
     message = MessageRepo.create(db, message)
     sender = db.get(User, user_id)
@@ -158,10 +160,13 @@ def get_user_chats(db: Session, user_id: int) -> list[ChatOut]:
             if employer:
                 employer_user = db.get(User, employer.user_id)
         other_email = None
+        other_user_id = None
         if candidate and candidate.user_id == user_id:
             other_email = employer_user.email if employer_user else None
+            other_user_id = employer.user_id if employer else None
         elif employer and employer.user_id == user_id:
             other_email = candidate_user.email if candidate_user else None
+            other_user_id = candidate.user_id if candidate else None
         messages = ChatRepo.get_messages(db, chat.id)
         last_msg = messages[-1].text[:80] if messages else None
         result.append(ChatOut(
@@ -170,6 +175,8 @@ def get_user_chats(db: Session, user_id: int) -> list[ChatOut]:
             created_at=chat.created_at,
             vacancy_title=vacancy.title if vacancy else None,
             other_user_email=other_email,
+            other_user_id=other_user_id,
             last_message=last_msg,
+            application_status=application.status.value if application else None,
         ))
     return result

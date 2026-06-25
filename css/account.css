@@ -18,7 +18,7 @@ body::before {
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: url('https://www.bing.com/th/id/OIP.7e00VpnTqhAP47U3U6Wq_wHaNK?w=193&h=333&c=8&rs=1&qlt=90&o=6&pid=3.1&rm=2');
+    background-image: url('https://imageio.forbes.com/specials-images/imageserve/867416784/0x0.jpg?format=jpg&amp;height=600&amp;width=1200&amp;fit=bounds');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -564,6 +564,11 @@ body::after {
     color: #c0392b;
 }
 
+.app-badge.reviewed {
+    background: #fff8e1;
+    color: #f57f17;
+}
+
 .app-card-actions {
     display: flex;
     align-items: center;
@@ -618,6 +623,51 @@ body::after {
     background: linear-gradient(100deg, #616a6b, #7f8c8d);
 }
 
+.btn-accept {
+    background: linear-gradient(100deg, #1a8a5e, #2cb07e);
+    box-shadow: 0 4px 10px rgba(26, 138, 94, 0.25);
+}
+
+.btn-accept:hover {
+    background: linear-gradient(100deg, #15704c, #249a6b);
+}
+
+.btn-accept:disabled,
+.btn-reject:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-reject {
+    background: linear-gradient(100deg, #c0392b, #e25c5c);
+    box-shadow: 0 4px 10px rgba(192, 57, 43, 0.25);
+}
+
+.btn-reject:hover {
+    background: linear-gradient(100deg, #922b21, #c0392b);
+}
+
+.app-card-clickable {
+    cursor: pointer;
+}
+
+.app-card-clickable:hover {
+    transform: translateY(-1px);
+}
+
+.app-card-desc {
+    font-size: 0.83rem;
+    color: #4a6f8a;
+    margin-top: 0.4rem;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
 .chat-list {
     display: flex;
     flex-direction: column;
@@ -634,12 +684,54 @@ body::after {
 }
 
 .msg-sidebar {
-    width: 280px;
-    border-right: 1px solid #e2e8f0;
+    width: 300px;
+    min-width: 200px;
+    max-width: 500px;
+    flex-basis: 300px;
+    flex-shrink: 0;
+    border-right: none;
     display: flex;
     flex-direction: column;
     background: #f8fafc;
+}
+
+.msg-resizer {
+    width: 5px;
+    cursor: col-resize;
+    background: #e2e8f0;
     flex-shrink: 0;
+    align-self: stretch;
+    transition: background 0.2s;
+    position: relative;
+    z-index: 3;
+}
+
+.msg-resizer:hover,
+.msg-resizer.active {
+    background: #2c7cb0;
+}
+
+.msg-resizer::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 3px;
+    height: 24px;
+    border-radius: 2px;
+    background: transparent;
+    transition: background 0.2s;
+}
+
+.msg-resizer:hover::after,
+.msg-resizer.active::after {
+    background: rgba(255,255,255,0.6);
+}
+
+.messenger.resizing {
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .msg-sidebar-header {
@@ -752,11 +844,17 @@ body::after {
 }
 
 .msg-contact-time {
+    display: flex;
+    justify-content: center;
+    width: 35px;
+    background-color: #9bc4e5;
+    z-index: 1;
     font-size: 0.65rem;
-    color: #94a3b8;
+    color: #000000;
     position: absolute;
     top: 0.85rem;
     right: 1rem;
+    border-radius: 10px;
 }
 
 .msg-contact-badge {
@@ -1097,6 +1195,106 @@ body::after {
 
 .chat-card { cursor: pointer; }
 
+/* Hidden scrollbars in chat (still scrollable via wheel/touch) */
+.msg-messages-area,
+.msg-contact-list {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.msg-messages-area::-webkit-scrollbar,
+.msg-contact-list::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+/* Blocked-chat banner (shown when application is rejected) */
+.msg-blocked-banner {
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 1rem 1.2rem;
+    margin: 0.6rem;
+    background: #fdecec;
+    border: 1px solid #f3b0b0;
+    border-radius: 1rem;
+    color: #c0392b;
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.4;
+}
+
+.msg-blocked-banner i {
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+/* ─── Avatar online indicator ─── */
+.avatar-container {
+    position: relative;
+    display: inline-block;
+    line-height: 0;
+}
+
+.online-dot {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #2ecc71;
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    display: none;
+    z-index: 2;
+}
+
+.online-dot.active {
+    display: block;
+}
+
+/* slight inset so the dot hugs the smaller chat-list avatars */
+.msg-contact-avatar-sm + .online-dot,
+.avatar-container > .msg-contact-avatar-sm ~ .online-dot {
+    bottom: 0;
+    right: 0;
+}
+
+.chat-partner-status {
+    display: flex;
+    align-items: center;
+    margin-top: 2px;
+    font-size: 0.78rem;
+    color: #7f8c8d;
+    transition: color 0.3s;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+    background-color: #7f8c8d;
+    transition: background-color 0.3s;
+    flex-shrink: 0;
+}
+
+.status-text {
+    line-height: 1;
+}
+
+.chat-partner-status.is-online .status-dot {
+    background-color: #2ecc71;
+}
+
+.chat-partner-status.is-online .status-text {
+    color: #2ecc71;
+}
+
 .chat-preview {
     font-size: 0.8rem;
     color: #94a3b8;
@@ -1195,9 +1393,15 @@ body::after {
 
     .msg-sidebar {
         width: 100%;
-        border-right: none;
+        min-width: 0;
+        max-width: none;
+        flex-basis: auto;
         border-bottom: 1px solid #e2e8f0;
         max-height: 250px;
+    }
+
+    .msg-resizer {
+        display: none;
     }
 
     .msg-back-btn {
@@ -1217,6 +1421,8 @@ body::after {
 
     .msg-sidebar {
         max-height: 200px;
+        min-width: 0;
+        max-width: none;
     }
 
     .msg-contact-item {
@@ -1535,5 +1741,308 @@ body::after {
         width: 60px;
         height: 60px;
         font-size: 1.5rem;
+    }
+}
+
+/* ─── Resume Modal ─── */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(10, 26, 42, 0.55);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.modal-overlay.open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-window {
+    position: relative;
+    width: 100%;
+    max-width: 620px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+    transform: scale(0.92) translateY(10px);
+    opacity: 0;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease;
+}
+
+.modal-overlay.open .modal-window {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+
+.modal-close {
+    position: absolute;
+    top: 0.9rem;
+    right: 0.9rem;
+    z-index: 5;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(15, 43, 63, 0.06);
+    color: #4a6f8a;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+.modal-close:hover {
+    background: #e25c5c;
+    color: #fff;
+    transform: rotate(90deg);
+}
+
+.resume-doc {
+    overflow-y: auto;
+    padding: 1.8rem 1.8rem 1.2rem;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.resume-doc::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+}
+
+.modal-footer {
+    flex-shrink: 0;
+    padding: 0.9rem 1.8rem;
+    border-top: 1px solid #eef2f6;
+    display: flex;
+    justify-content: flex-end;
+    background: #fafcff;
+}
+
+/* Resume card content */
+.resume-loading,
+.resume-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    padding: 3.5rem 1rem;
+    color: #94a3b8;
+}
+
+.resume-loading i,
+.resume-empty i {
+    font-size: 2.2rem;
+    color: #c5d3e0;
+}
+
+.resume-head {
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+    padding-bottom: 1.2rem;
+    border-bottom: 1px solid #eef2f6;
+    margin-bottom: 1.2rem;
+}
+
+.resume-avatar {
+    width: 68px;
+    height: 68px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1a5f87, #2c7cb0);
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 16px rgba(26, 95, 135, 0.3);
+}
+
+.resume-head-info {
+    min-width: 0;
+}
+
+.resume-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #0b2b3f;
+    line-height: 1.2;
+}
+
+.resume-position {
+    font-size: 0.95rem;
+    color: #2c7cb0;
+    font-weight: 600;
+    margin-top: 0.2rem;
+}
+
+.resume-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+    font-size: 0.76rem;
+    font-weight: 600;
+    padding: 0.25rem 0.7rem;
+    border-radius: 1rem;
+}
+
+.resume-status i {
+    font-size: 0.5rem;
+}
+
+.resume-status.is-active {
+    background: #e6f7f0;
+    color: #1a8a5e;
+}
+
+.resume-status.is-draft {
+    background: #fff3e0;
+    color: #e8730c;
+}
+
+.resume-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.2rem;
+}
+
+.resume-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #1f4e6e;
+    background: #f1f6fb;
+    padding: 0.35rem 0.75rem;
+    border-radius: 0.8rem;
+}
+
+.resume-tag i {
+    color: #2c7cb0;
+    font-size: 0.75rem;
+}
+
+.resume-contacts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.6rem 1rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 0.9rem;
+    margin-bottom: 1.3rem;
+}
+
+.resume-contact {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.88rem;
+}
+
+.resume-contact > i {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1a5f87, #2c7cb0);
+    color: #fff;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.resume-contact-label {
+    display: block;
+    font-size: 0.7rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.resume-contact-value {
+    display: block;
+    color: #0b2b3f;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.resume-section {
+    margin-bottom: 1.2rem;
+}
+
+.resume-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #1f4e6e;
+    margin-bottom: 0.5rem;
+}
+
+.resume-section-title i {
+    color: #2c7cb0;
+    font-size: 0.85rem;
+}
+
+.resume-text {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #334e63;
+    white-space: pre-wrap;
+}
+
+.resume-muted {
+    font-size: 0.88rem;
+    color: #b6c2cf;
+    font-style: italic;
+}
+
+.resume-skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.skill-chip {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #155e75;
+    background: #ecfeff;
+    border: 1px solid #cffafe;
+    padding: 0.3rem 0.7rem;
+    border-radius: 0.7rem;
+}
+
+@media (max-width: 520px) {
+    .resume-head {
+        flex-direction: column;
+        text-align: center;
+    }
+    .resume-contacts {
+        grid-template-columns: 1fr;
     }
 }

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <script src="js/auth-guard.js"></script>
 
     <title>JobFlow — Поиск сотрудников</title>
 
@@ -12,6 +13,26 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
     <link rel="stylesheet" href="css\sotrudnick.css">
+    <link rel="stylesheet" href="css\notifications.css">
+    <style>
+        .jf-resumes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin:1.5rem 0 2.5rem;}
+        .jf-resume-card{background:rgba(255,255,255,.97);border-radius:14px;padding:1.1rem 1.2rem;box-shadow:0 6px 22px rgba(0,0,0,.18);cursor:pointer;transition:transform .18s,box-shadow .18s;border:1px solid rgba(255,255,255,.4);}
+        .jf-resume-card:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(0,0,0,.24);}
+        .jf-resume-head{display:flex;gap:.8rem;align-items:center;margin-bottom:.6rem;}
+        .jf-resume-avatar{width:42px;height:42px;border-radius:50%;background:#e7f1f8;color:#2f7eb6;display:flex;align-items:center;justify-content:center;flex:0 0 42px;}
+        .jf-resume-name{font-weight:650;color:#1f3e54;font-size:1rem;}
+        .jf-resume-title{color:#2f7eb6;font-size:.85rem;}
+        .jf-resume-pos{color:#1f3e54;font-size:.85rem;margin-bottom:.4rem;}
+        .jf-resume-meta{display:flex;flex-wrap:wrap;gap:.7rem;color:#5d7387;font-size:.82rem;margin-bottom:.4rem;}
+        .jf-resume-skills{color:#5d7387;font-size:.8rem;}
+        .jf-resumes-empty{grid-column:1/-1;text-align:center;color:#dbe7f1;padding:2.5rem 1rem;}
+        .jf-resumes-empty i{font-size:1.6rem;display:block;margin-bottom:.5rem;}
+        .jf-resumes-empty p{margin:0;}
+        .detail-row{padding:.35rem 0;color:#1f3e54;font-size:.92rem;}
+        .detail-section{margin-top:.8rem;padding-top:.6rem;border-top:1px solid rgba(0,0,0,.08);}
+        .detail-section h3{font-size:.95rem;color:#1f3e54;margin-bottom:.3rem;}
+        .detail-section p{color:#3a4d5e;font-size:.9rem;line-height:1.4;white-space:pre-wrap;}
+    </style>
 </head>
 
 <body>
@@ -73,11 +94,11 @@
                             type="text"
                             id="cityInput"
                             placeholder="Город"
-                            value="Брянск"
+                            value=""
                             autocomplete="off">
                     </div>
 
-            <button class="btn" id="searchBtn" onclick="goToVacancies()">
+            <button class="btn" id="searchBtn" onclick="searchCandidates()">
                 <i class="fas fa-search"></i>
                 Найти
             </button>
@@ -93,17 +114,26 @@
                     Часто ищут:
                 </div>
 
-                <div class="frequent-tags">
-                    <a href="#" class="tag">Начальник</a>
-                    <a href="#" class="tag">Делопроизводитель</a>
-                    <a href="#" class="tag">Заведующий аптекой</a>
-                    <a href="#" class="tag">Менеджер</a>
-                </div>
+                <ol class="frequent-tags">
+                    <li href="#" class="tag">Начальник</li>
+                    <li href="#" class="tag">Делопроизводитель</li>
+                    <li href="#" class="tag">Заведующий аптекой</li>
+                    <li href="#" class="tag">Менеджер</li>
+                </ol>
 
             </div>
 
         </div>
 
+    </div>
+
+    <div class="section-title">
+        <i class="fas fa-users"></i>
+        Кандидаты
+    </div>
+
+    <div id="resumesList" class="jf-resumes-grid">
+        <div class="jf-resumes-empty"><i class="fas fa-spinner fa-spin"></i> Загрузка резюме…</div>
     </div>
 
     <div class="section-title">
@@ -454,6 +484,16 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="resumeDetailModal" style="display:none;">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h2 id="resumeDetailTitle"><i class="fas fa-file-alt"></i> Резюме</h2>
+            <button class="modal-close" onclick="closeResumeDetail()">&times;</button>
+        </div>
+        <div class="modal-body" id="resumeDetailBody"></div>
+    </div>
+</div>
+
 <footer class="footer">
 
     <div class="footer-content">
@@ -469,7 +509,7 @@
 
         <div class="footer-col">
             <h4>Соискателям</h4>
-            <a href="#">Кандидаты по профессиям</a>
+            <a href="vacancies.html">Поиск работы</a>
             <a href="#">Производственный календарь</a>
             <a href="#">Требования к ПО</a>
             <a href="#">Безопасный JobFlow</a>
@@ -477,9 +517,9 @@
 
         <div class="footer-col">
             <h4>Работодателям</h4>
-            <a href="#">Поиск работы</a>
-            <a href="#">Поиск по резюме</a>
-            <a href="#">Мобильное приложение</a>
+            <a href="sotrudnick.html">Поиск сотрудников</a>
+            <a href="resumes-browse.html">Кандидаты по профессиям</a>
+            <a href="resumes-browse.html">Поиск по резюме</a>
             <a href="#">Этика и комплаенс</a>
         </div>
 
@@ -507,22 +547,136 @@
 </footer>
 
 <script>
-document.querySelectorAll('.tag').forEach(tag => {
+document.querySelectorAll('.tag').forEach(function(tag) {
     tag.addEventListener('click', function(e) {
         e.preventDefault();
         document.getElementById('searchQuery').value = this.textContent;
-        goToVacancies();
+        searchCandidates();
     });
 });
 
-function goToVacancies() {
+function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+}
+
+function searchCandidates() {
     var search = document.getElementById('searchQuery').value.trim();
     var city = document.getElementById('cityInput').value.trim();
-    var params = [];
-    if (search) params.push('search=' + encodeURIComponent(search));
-    if (city) params.push('city=' + encodeURIComponent(city));
-    window.location.href = 'vacancies.html' + (params.length ? '?' + params.join('&') : '');
+    var token = localStorage.getItem('jobflow_token');
+    if (!token) { window.location.href = 'login.html'; return; }
+    var params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (city) params.set('city', city);
+    var container = document.getElementById('resumesList');
+    container.innerHTML = '<div class="jf-resumes-empty"><i class="fas fa-spinner fa-spin"></i> Поиск кандидатов…</div>';
+    fetch('/api/resumes/browse?' + params.toString(), {
+        headers: {'Authorization': 'Bearer ' + token}
+    })
+    .then(function(res) {
+        if (res.status === 401 || res.status === 403) {
+            container.innerHTML = '<div class="jf-resumes-empty"><i class="fas fa-lock"></i><p>База резюме доступна только работодателям</p></div>';
+            return null;
+        }
+        return res.json();
+    })
+    .then(function(resumes) {
+        if (!resumes) return;
+        if (!resumes.length) {
+            container.innerHTML = '<div class="jf-resumes-empty"><i class="fas fa-user-slash"></i><p>Кандидаты не найдены</p></div>';
+            return;
+        }
+        container.innerHTML = resumes.map(function(r) {
+            var fullName = ((r.candidate_name || '') + ' ' + (r.candidate_surname || '')).trim() || 'Кандидат';
+            return '<div class="jf-resume-card" onclick="showResumeDetail(' + r.id + ')">' +
+                '<div class="jf-resume-head">' +
+                    '<div class="jf-resume-avatar"><i class="fas fa-user"></i></div>' +
+                    '<div>' +
+                        '<div class="jf-resume-name">' + escapeHtml(fullName) + '</div>' +
+                        '<div class="jf-resume-title">' + escapeHtml(r.title || 'Без названия') + '</div>' +
+                    '</div>' +
+                '</div>' +
+                (r.position ? '<div class="jf-resume-pos"><i class="fas fa-briefcase"></i> ' + escapeHtml(r.position) + '</div>' : '') +
+                '<div class="jf-resume-meta">' +
+                    (r.city ? '<span><i class="fas fa-map-marker-alt"></i> ' + escapeHtml(r.city) + '</span>' : '') +
+                    (r.salary ? '<span><i class="fas fa-money-bill-wave"></i> ' + escapeHtml(r.salary) + '</span>' : '') +
+                '</div>' +
+                (r.skills ? '<div class="jf-resume-skills"><i class="fas fa-tools"></i> ' + escapeHtml(r.skills).substring(0, 90) + '</div>' : '') +
+            '</div>';
+        }).join('');
+    })
+    .catch(function() {
+        container.innerHTML = '<div class="jf-resumes-empty"><i class="fas fa-exclamation-circle"></i><p>Ошибка загрузки</p></div>';
+    });
 }
+
+function showResumeDetail(id) {
+    var token = localStorage.getItem('jobflow_token');
+    fetch('/api/resumes/' + id, { headers: {'Authorization': 'Bearer ' + token} })
+    .then(function(res) { return res.json(); })
+    .then(function(r) {
+        var fullName = ((r.candidate_name || '') + ' ' + (r.candidate_surname || '')).trim() || 'Кандидат';
+        document.getElementById('resumeDetailTitle').innerHTML = '<i class="fas fa-file-alt"></i> ' + escapeHtml(r.title || 'Резюме');
+        var contacts = '';
+        if (r.candidate_email) contacts += '<br><span style="margin-left:24px;font-size:.88rem;color:#4a6f8a"><i class="fas fa-envelope"></i> ' + escapeHtml(r.candidate_email) + '</span>';
+        if (r.candidate_phone) contacts += '<br><span style="margin-left:24px;font-size:.88rem;color:#4a6f8a"><i class="fas fa-phone"></i> ' + escapeHtml(r.candidate_phone) + '</span>';
+        var body = '';
+        body += '<div class="detail-row"><i class="fas fa-user"></i> <strong>Кандидат:</strong> ' + escapeHtml(fullName) + contacts + '</div>';
+        body += '<div class="detail-row"><i class="fas fa-briefcase"></i> <strong>Должность:</strong> ' + escapeHtml(r.position || 'Не указана') + '</div>';
+        body += '<div class="detail-row"><i class="fas fa-map-marker-alt"></i> <strong>Город:</strong> ' + escapeHtml(r.city || 'Не указан') + '</div>';
+        body += '<div class="detail-row"><i class="fas fa-money-bill-wave"></i> <strong>Зарплата:</strong> ' + escapeHtml(r.salary || 'Не указана') + '</div>';
+        body += '<div class="detail-row"><i class="fas fa-graduation-cap"></i> <strong>Образование:</strong> ' + escapeHtml(r.education || 'Не указано') + '</div>';
+        body += '<div class="detail-row"><i class="fas fa-clock"></i> <strong>Занятость:</strong> ' + escapeHtml(r.employment || 'Не указана') + '</div>';
+        if (r.skills) body += '<div class="detail-section"><h3>Навыки</h3><p>' + escapeHtml(r.skills) + '</p></div>';
+        if (r.experience) body += '<div class="detail-section"><h3>Опыт</h3><p>' + escapeHtml(r.experience) + '</p></div>';
+        if (r.about) body += '<div class="detail-section"><h3>О себе</h3><p>' + escapeHtml(r.about) + '</p></div>';
+        body += '<div class="detail-section"><button class="btn btn-full" id="resumeContactBtn" onclick="contactCandidate(' + r.id + ')"><i class="fas fa-paper-plane"></i> Откликнуться</button></div>';
+        document.getElementById('resumeDetailBody').innerHTML = body;
+        document.getElementById('resumeDetailModal').style.display = 'flex';
+    })
+    .catch(function() { alert('Ошибка загрузки резюме'); });
+}
+
+function contactCandidate(resumeId) {
+    var token = localStorage.getItem('jobflow_token');
+    if (!token) { window.location.href = 'login.html'; return; }
+    var btn = document.getElementById('resumeContactBtn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...'; }
+    fetch('/api/resumes/' + resumeId + '/contact', {
+        method: 'POST',
+        headers: {'Authorization': 'Bearer ' + token}
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (data.chat_id) {
+            window.location.href = 'account.html?open_chat_id=' + data.chat_id;
+        } else {
+            alert(data.detail || 'Запрос отправлен');
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Запрос отправлен'; }
+        }
+    })
+    .catch(function(err) {
+        alert('Ошибка: ' + (err.message || err));
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Откликнуться'; }
+    });
+}
+
+function closeResumeDetail() {
+    document.getElementById('resumeDetailModal').style.display = 'none';
+}
+
+document.getElementById('resumeDetailModal').addEventListener('click', function(e) {
+    if (e.target === this) closeResumeDetail();
+});
+
+(function() {
+    var saved = localStorage.getItem('jobflow_city');
+    var ci = document.getElementById('cityInput');
+    if (saved && ci && !ci.value.trim()) ci.value = saved;
+})();
+
+searchCandidates();
 
 function openCreateVacancy(e) {
     if (e) e.preventDefault();
@@ -582,8 +736,9 @@ document.getElementById('vacancyModal').addEventListener('click', function(e) {
     if (e.target === this) closeCreateVacancy();
 });
 </script>
-<script src="city-loader.js"></script>
-<script src="nav-auth.js"></script>
+<script src="js/city-loader.js"></script>
+<script src="js/nav-auth.js"></script>
+<script src="js/notifications.js"></script>
 
 </body>
 </html>

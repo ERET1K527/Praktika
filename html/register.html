@@ -341,7 +341,8 @@ document.getElementById('registerForm').addEventListener('submit', function(e) {
         if (data.access_token) {
             localStorage.setItem('jobflow_token', data.access_token);
             localStorage.removeItem('jobflow_phone');
-            window.location.href = 'account.html';
+            var dest = (role === 'employer') ? 'sotrudnick.html' : 'index.html';
+            window.location.href = dest;
         } else {
             var msg = data.detail || 'Ошибка регистрации';
             if (msg === 'Email already registered') msg = 'Этот email уже зарегистрирован';
@@ -364,8 +365,8 @@ document.getElementById('registerForm').addEventListener('submit', function(e) {
     }
 })();
 </script>
-<script src="city-loader.js"></script>
-<script src="nav-auth.js"></script>
+<script src="js/city-loader.js"></script>
+<script src="js/nav-auth.js"></script>
 
 </body>
 </html>
